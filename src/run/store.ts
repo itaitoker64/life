@@ -126,8 +126,11 @@ export function upcomingRaces(): Race[] {
 }
 
 export function setPlanStatus(plan: CoachingPlan, status: PlanStatus) {
+  const baseline = R.plans.find(p => p.id === plan.id);
+  if (!baseline) return;
+  baseline.status = status;
   plan.status = status;
-  saveDoc(C.plans, plan.id, plan).catch(fail);
+  saveDoc(C.plans, baseline.id, baseline).catch(fail);
   emit();
 }
 

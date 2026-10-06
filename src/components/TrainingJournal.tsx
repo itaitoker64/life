@@ -45,7 +45,7 @@ export function TrainingJournal() {
     if (match && !match.startsWith('marked:')) continue;
     const done = !!match;
     entries.push({ ...plan, title: plan.adjustment?.mode === 'reduce' ? `${plan.kind === 'run' ? 'ריצה קלה' : plan.title} · עומס מופחת` : plan.title, plan, done, status: done ? 'סומן כבוצע' : plan.status === 'skipped' ? 'דולג' : plan.date < now ? 'לא סומן כבוצע' : 'מתוכנן', open: () => {
-      if (plan.coachDate) router.push({ pathname: '/run/day/[date]', params: { date: plan.adjustment ? plan.date : plan.coachDate } });
+      if (plan.coachDate) router.push({ pathname: '/run/day/[date]', params: { date: plan.date } });
       else if (plan.routineId && L.routines.some(r => r.id === plan.routineId)) router.push({ pathname: '/strength/routine/[id]', params: { id: plan.routineId } });
       else router.push({ pathname: '/train', params: { tab: plan.kind === 'run' ? 'run' : 'strength' } });
     } });
@@ -84,7 +84,7 @@ export function TrainingJournal() {
       <Pressable accessibilityRole="button" onPress={e.open}>
         <Row style={{ gap: 10 }}><Ionicons name={e.kind === 'run' ? 'walk-outline' : 'barbell-outline'} size={22} color={e.kind === 'run' ? colors.run : colors.primary} /><View style={{ flex: 1 }}><Text style={font.h3}>{e.title}</Text><Text style={font.small}>{formatLongDate(e.date)}</Text></View></Row>
         <Text style={[font.small, { color: e.done ? colors.success : colors.muted, marginTop: 8 }]}>{e.status}</Text>
-        {e.plan?.coachDate && e.plan.coachDate !== e.date ? <Text style={font.tiny}>הועבר מ־{formatLongDate(e.plan.coachDate)} · {e.plan.adjustment ? 'הפרטים המעודכנים נפתחים' : 'הפרטים נפתחים מתוכנית המקור'}</Text> : null}
+        {e.plan?.coachDate && e.plan.coachDate !== e.date ? <Text style={font.tiny}>הועבר מ־{formatLongDate(e.plan.coachDate)} · הפרטים המעודכנים נפתחים</Text> : null}
       </Pressable>
       {e.plan?.adjustment ? <View><Text style={font.small}>{e.plan.adjustment.reason}</Text>{e.plan.adjustment.originalDate !== e.date ? <Text style={font.tiny}>נדחה מ־{formatLongDate(e.plan.adjustment.originalDate)}</Text> : null}<Button title="ביטול ההתאמה הזו" size="sm" variant="ghost" onPress={() => updatePlanning(d => ({ ...d, dismissedAdjustments: [...(d.dismissedAdjustments ?? []), e.plan!.adjustment!.key] })).catch(() => Alert.alert('השמירה נכשלה'))} /></View> : null}
       {e.done && (data.alternateWorkouts ?? []).some(w => w.id === e.id) ? <Button title="מחיקת דיווח העומס" size="sm" variant="ghost" onPress={() => updatePlanning(d => ({ ...d, alternateWorkouts: (d.alternateWorkouts ?? []).filter(w => w.id !== e.id) })).catch(() => Alert.alert('השמירה נכשלה'))} /> : null}

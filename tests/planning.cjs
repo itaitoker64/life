@@ -208,3 +208,17 @@ test('reduced strength session keeps warm-ups and does not change the saved rout
   assert.equal(reduced.sets[1].weight, 90); assert.equal(reduced.sets[1].type, 'normal');
   assert.equal(item.sets.length, 4); assert.equal(item.sets[1].weight, 100);
 });
+test('running detail uses the reduced plan while completion preserves its baseline', () => {
+  const data = emptyPlanning(); let saved;
+  const scoped = loader({ '../db/docs': { saveDoc: async (_c, _id, value) => { saved = { ...value }; } }, '../lib/gemini': {}, '../lib/secrets': {}, './load': {}, './planner': {}, './science': {}, '../planning/store': { usePlanning: { getState: () => ({ data }) } } });
+  const run = scoped('src/run/store.ts');
+  const baseline = { id: '2026-10-07', plan_date: '2026-10-07', title: 'Intervals', workout_type: 'intervals', status: 'planned', duration_min: 50, distance_km: 8, target_pace_fast_sec_km: 250, target_pace_slow_sec_km: 280, adaptation_note: null };
+  run.R.plans = [baseline, { ...baseline, id: '2026-10-08', plan_date: '2026-10-08' }, { ...baseline, id: '2026-10-09', plan_date: '2026-10-09' }];
+  run.R.assessments = [{ training_paces: { easy: { fast: 400, slow: 460 } } }];
+  const { setAdaptationProvider } = scoped('src/planning/adaptation.ts'); setAdaptationProvider(() => context());
+  const reduced = run.planFor('2026-10-07');
+  assert.equal(reduced.workout_type, 'easy'); assert.equal(reduced.duration_min, 35);
+  assert.equal(reduced.target_pace_fast_sec_km, 400); assert.equal(baseline.workout_type, 'intervals');
+  run.setPlanStatus(reduced, 'completed');
+  assert.equal(baseline.status, 'completed'); assert.equal(saved.duration_min, 50); assert.equal(saved.plan_date, '2026-10-07');
+});
