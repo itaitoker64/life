@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { TrainingJournal } from '../../src/components/TrainingJournal';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
@@ -18,9 +19,9 @@ import { chevronBack, chevronForward, colors, font, radius, spacing } from '../.
 
 export default function Train() {
   const params = useLocalSearchParams<{ tab?: string }>();
-  const [tab, setTab] = useState<'strength' | 'run'>(params.tab === 'run' ? 'run' : 'strength');
+  const [tab, setTab] = useState<'strength' | 'run' | 'journal'>(params.tab === 'journal' ? 'journal' : params.tab === 'run' ? 'run' : 'strength');
   useEffect(() => {
-    if (params.tab === 'run' || params.tab === 'strength') setTab(params.tab);
+    if (params.tab === 'run' || params.tab === 'strength' || params.tab === 'journal') setTab(params.tab);
   }, [params.tab]);
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'left', 'right']}>
@@ -29,13 +30,14 @@ export default function Train() {
           options={[
             { value: 'strength', label: 'כוח' },
             { value: 'run', label: 'ריצה' },
+            { value: 'journal', label: 'יומן' },
           ]}
           value={tab}
           onChange={setTab}
           style={{ marginBottom: 0 }}
         />
       </View>
-      {tab === 'strength' ? <Strength /> : <Running />}
+      {tab === 'journal' ? <TrainingJournal /> : tab === 'strength' ? <Strength /> : <Running />}
     </SafeAreaView>
   );
 }

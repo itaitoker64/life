@@ -6,7 +6,11 @@ import { ActivityIndicator, AppState, I18nManager, Platform, View } from 'react-
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ToastHost } from '../src/components/sheet';
 import { autoBackup, initCloud } from '../src/lib/cloud';
-import { initRun, recalibrateIfStale, syncIfStale } from '../src/run/store';
+import { initRun, recalibrateIfStale, syncIfStale, useRun } from '../src/run/store';
+import { initPlanning, usePlanning } from '../src/planning/store';
+import { syncReminders } from '../src/planning/reminders';
+import { validDate } from '../src/planning/model';
+import { today } from '../src/lib/dates';
 import { useApp } from '../src/state/store';
 import { initLift, useLift } from '../src/strength/store';
 import { colors } from '../src/theme';
@@ -30,13 +34,17 @@ Notifications.setNotificationHandler({
 export default function RootLayout() {
   const { ready, profile, init } = useApp();
   const liftReady = useLift((s) => s.ready);
+  const liftVersion = useLift((s) => s.version);
+  const runVersion = useRun((s) => s.version);
+  const runReady = useRun((s) => s.ready);
+  const planning = usePlanning();
   const router = useRouter();
   const segments = useSegments();
 
   useEffect(() => {
     (async () => {
       await init();
-      await Promise.all([initLift(), initRun(), initCloud().catch(() => {})]);
+      await Promise.all([initLift().then(initPlanning), initRun(), initCloud().catch(() => {})]);
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('rest', {
           name: 'טיימר מנוחה',
@@ -53,11 +61,36 @@ export default function RootLayout() {
   // Coming back to the app: pick up new runs.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
-      if (s === 'active') syncIfStale().then(recalibrateIfStale);
+      if (s === 'active') {
+        syncReminders().catch(e => console.warn('reminder sync failed', e));
+        syncIfStale().then(recalibrateIfStale).catch(e => console.warn('run sync failed', e));
+      }
       if (s === 'background') autoBackup();
     });
     return () => sub.remove();
   }, []);
+
+  useEffect(() => {
+    if (planning.ready && liftReady && runReady) syncReminders().catch(e => console.warn('reminder sync failed', e));
+  }, [planning.data, planning.ready, liftReady, runReady, liftVersion, runVersion]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' || !ready || !liftReady || !planning.ready || !profile?.onboarded) return;
+    function openReminder(response: Notifications.NotificationResponse) {
+      const data = response.notification.request.content.data;
+      if (data?.screen === 'journal') router.push({ pathname: '/train', params: { tab: 'journal', ...(typeof data.date === 'string' && validDate(data.date) ? { date: data.date } : {}) } });
+      else if (data?.screen === 'nutrition') {
+        useApp.getState().setSelectedDate(today());
+        router.push('/nutrition');
+      }
+      else return;
+      Notifications.clearLastNotificationResponseAsync().catch(() => {});
+    }
+    const last = Notifications.getLastNotificationResponse();
+    if (last) openReminder(last);
+    const sub = Notifications.addNotificationResponseReceivedListener(openReminder);
+    return () => sub.remove();
+  }, [ready, liftReady, planning.ready, profile?.onboarded, router]);
 
   useEffect(() => {
     if (!ready || !profile) return;
@@ -66,7 +99,7 @@ export default function RootLayout() {
     if (profile.onboarded && inOnboarding) router.replace('/');
   }, [ready, profile, segments, router]);
 
-  if (!ready || !liftReady) {
+  if (!ready || !liftReady || !planning.ready) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -90,6 +123,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="settings" options={{ title: 'הגדרות' }} />
+        <Stack.Screen name="reminders" options={{ title: 'תזכורות' }} />
         <Stack.Screen name="weight" options={{ title: 'מגמת משקל' }} />
         <Stack.Screen name="expenditure" options={{ title: 'הוצאה קלורית' }} />
         <Stack.Screen name="program-update" options={{ title: 'עדכון תוכנית' }} />

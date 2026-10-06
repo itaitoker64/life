@@ -19,6 +19,7 @@ import {
 import type { ActivityLevel, Sex } from '../src/lib/tdee';
 import type { Units } from '../src/lib/units';
 import { R, initRun, syncIntervals, updateRunProfile, useRunVersion } from '../src/run/store';
+import { initPlanning } from '../src/planning/store';
 import { useApp } from '../src/state/store';
 import { L, setSettings, useLiftVersion, wipeLift } from '../src/strength/store';
 import { fmtClock } from '../src/strength/utils';
@@ -131,6 +132,8 @@ export default function Settings() {
           for (const c of ['run_activities', 'run_plans', 'run_assessments', 'run_races', 'run_meta']) await clearCollection(c);
           await wipeLift();
           await initRun();
+          await clearCollection('life_planning');
+          await initPlanning();
           await init();
         },
       },
@@ -140,6 +143,7 @@ export default function Settings() {
   return (
     <Screen bottomInset={false}>
       <Card style={{ padding: 0 }}>
+        <ListRow icon="notifications-outline" title="תזכורות אימונים ותזונה" sub="בחירת שעות והרשאות התראות" onPress={() => router.push('/reminders')} />
         <ListRow icon="cloud-upload-outline" iconColor={colors.primary} title="גיבוי ושחזור" sub="גיבוי לענן, ייבוא מ-Lift ומ-Stride, קובץ גיבוי" onPress={() => router.push('/backup')} />
         <ListRow icon="scale-outline" iconColor={colors.weight} title="מגמת משקל" sub="מגמה, שינויים ותחזית" onPress={() => router.push('/weight')} />
         <ListRow icon="flame-outline" iconColor={colors.expenditure} title="הוצאה קלורית" sub="היסטוריית ההוצאה היומית" onPress={() => router.push('/expenditure')} last />

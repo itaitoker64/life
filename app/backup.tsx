@@ -8,6 +8,7 @@ import { Button, Card, Field, Screen, SectionTitle } from '../src/components/ui'
 import { exportSnapshot, importSnapshot, snapshotSummary, type Snapshot } from '../src/lib/backup';
 import { backupNow, cloudBackupInfo, restoreFromCloud, signIn, signOut, signUp, supabase, useCloud } from '../src/lib/cloud';
 import { initRun } from '../src/run/store';
+import { initPlanning } from '../src/planning/store';
 import { useApp } from '../src/state/store';
 import { importLift, initLift } from '../src/strength/store';
 import { colors, font, spacing } from '../src/theme';
@@ -31,6 +32,7 @@ export default function Backup() {
   async function reloadAll() {
     await init();
     await Promise.all([initLift(), initRun()]);
+    await initPlanning();
   }
 
   async function auth(kind: 'in' | 'up') {

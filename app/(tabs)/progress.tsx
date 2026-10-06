@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { GoalAchievement } from '../../src/components/GoalAchievement';
+import { MonthlyTrends, WeeklyReview, monthStart, monthEnd } from '../../src/components/TrainingOverview';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
@@ -27,6 +29,9 @@ export default function Progress() {
   useRunVersion();
   const [mode, setMode] = useState<NutritionMode>('remaining');
   const [totals, setTotals] = useState<Map<ISODate, DailyTotal>>(new Map());
+  const [monthTotals, setMonthTotals] = useState<DailyTotal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [exp, setExp] = useState<ExpenditureSeries | null>(null);
   const [wt, setWt] = useState<WeightSeries | null>(null);
   const days = weekDays(selectedDate);
@@ -34,13 +39,17 @@ export default function Progress() {
   useFocusEffect(
     useCallback(() => {
       let alive = true;
+      setLoading(true);
+      setLoadError(false);
+      setTotals(new Map());
       (async () => {
-        const [tots, e, w] = await Promise.all([dailyTotals(days[0], days[6]), expenditureSeries(30, profile?.tdee ?? 0), weightSeries(30)]);
+        const [tots, monthly, e, w] = await Promise.all([dailyTotals(days[0], days[6]), dailyTotals(monthStart(), monthEnd()), expenditureSeries(30, profile?.tdee ?? 0), weightSeries(30)]);
         if (!alive) return;
         setTotals(new Map(tots.map((t) => [t.date, t])));
+        setMonthTotals(monthly);
         setExp(e);
         setWt(w);
-      })();
+      })().catch(() => { if (alive) setLoadError(true); }).finally(() => { if (alive) setLoading(false); });
       return () => {
         alive = false;
       };
@@ -64,6 +73,9 @@ export default function Progress() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         <Title>התקדמות</Title>
+        <WeeklyReview days={days} totals={totals} loading={loading} error={loadError} />
+        {!loading && !loadError ? <GoalAchievement days={days} totals={totals} selected={selectedDate} /> : null}
+        <MonthlyTrends totals={monthTotals} loading={loading} error={loadError} />
 
         <SectionTitle>תזונה השבוע</SectionTitle>
         <Card>

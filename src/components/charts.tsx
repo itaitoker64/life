@@ -37,8 +37,7 @@ export function Ring({
           fill="none"
           strokeDasharray={`${c * pct} ${c}`}
           strokeLinecap="round"
-          rotation={-90}
-          origin={`${size / 2}, ${size / 2}`}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
       </Svg>
       <RNText style={[font.h1, { fontSize: size > 140 ? 32 : 22 }]}>{label}</RNText>
@@ -219,7 +218,7 @@ export function BarChart({
   labels,
   color = colors.primary,
 }: {
-  values: number[];
+  values: Array<number | null>;
   target?: number;
   height?: number;
   width?: number;
@@ -227,14 +226,16 @@ export function BarChart({
   color?: string;
 }) {
   const pad = { l: 8, r: 8, t: 8, b: labels ? 20 : 4 };
-  const max = Math.max(1, ...values, target ?? 0) * 1.1;
+  const max = Math.max(1, ...values.filter((v): v is number => v != null), target ?? 0) * 1.1;
   const n = values.length;
   const slot = (width - pad.l - pad.r) / n;
   const barW = Math.max(3, slot * 0.6);
   const sy = (v: number) => pad.t + (1 - v / max) * (height - pad.t - pad.b);
   return (
     <Svg width={width} height={height}>
-      {values.map((v, i) => (
+      {values.map((v, i) => v == null ? (
+        <SvgText key={i} x={pad.l + i * slot + slot / 2} y={sy(0) - 8} fontSize={12} fill={colors.faint} textAnchor="middle">—</SvgText>
+      ) : (
         <Path
           key={i}
           d={`M${pad.l + i * slot + (slot - barW) / 2},${sy(0)} v${sy(v) - sy(0)} h${barW} V${sy(0)} z`}

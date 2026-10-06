@@ -138,6 +138,7 @@ export interface LiftSettings {
   wakeLock: boolean;
   builtinVersion: number;
   weeklyGoal?: number;
+  scheduledWorkouts?: Array<{ date: string; routineId: string }>;
   deload?: { start: number; end: number } | null;
   deloadSnoozeUntil?: number;
   lastDeloadEnd?: number;
