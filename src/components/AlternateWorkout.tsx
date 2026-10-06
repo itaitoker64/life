@@ -9,7 +9,7 @@ import { R } from '../run/store';
 import { uid } from '../strength/utils';
 import { font } from '../theme';
 import { Sheet } from './sheet';
-import { Button, Field, Segmented } from './ui';
+import { Button, DateStepper, Field, Segmented } from './ui';
 export function AlternateWorkout({ date: initialDate, initialKind = 'crossfit', replacementId: initialReplacement, onClose }: { date: string; initialKind?: TrainingKind; replacementId?: string; onClose: () => void }) {
   const data = usePlanning(s => s.data);
   const [date, setDate] = useState(initialDate);
@@ -45,7 +45,7 @@ export function AlternateWorkout({ date: initialDate, initialKind = 'crossfit', 
       setReplacementId(a.replacementId ?? data.alternateWorkouts?.find(w => w.id === a.id)?.replacementId);
     }} />)}
     <Segmented options={[{ value: 'strength', label: 'כוח' }, { value: 'run', label: 'ריצה / אירובי' }, { value: 'crossfit', label: 'קרוספיט' }]} value={kind} onChange={setKind} />
-    <Field label="תאריך (YYYY-MM-DD)" value={date} onChangeText={v => { setDate(v); setReplacementId(undefined); setSourceId(undefined); }} />
+    <DateStepper label="תאריך" value={date} max={today()} onChange={v => { setDate(v); setReplacementId(undefined); setSourceId(undefined); }} />
     <Field label="שם האימון" value={title} onChangeText={setTitle} />
     <Field label="משך בדקות" value={minutes} keyboardType="numeric" onChangeText={setMinutes} />
     <Field label="עצימות מורגשת 1–10 (7 קשה, 10 מקסימלי)" value={effort} keyboardType="numeric" onChangeText={setEffort} />

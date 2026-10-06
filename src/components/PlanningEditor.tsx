@@ -7,7 +7,7 @@ import { L, routines } from '../strength/store';
 import { uid } from '../strength/utils';
 import { font } from '../theme';
 import { Menu, Sheet, toast } from './sheet';
-import { Button, Card, Field, Row, Segmented } from './ui';
+import { Button, Card, DateStepper, Field, Row, Segmented } from './ui';
 
 const weekdays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 export function PlanningEditor({ date, onClose }: { date: string; onClose: () => void }) {
@@ -22,7 +22,7 @@ export function PlanningEditor({ date, onClose }: { date: string; onClose: () =>
   const [busy, setBusy] = useState(false);
   const routine = L.routines.find(r => r.id === routineId);
   async function save() {
-    if (!validDate(selectedDate) || selectedDate < today()) return Alert.alert('תאריך לא תקין', 'בחרו היום או תאריך עתידי בפורמט YYYY-MM-DD.');
+    if (!validDate(selectedDate) || selectedDate < today()) return Alert.alert('תאריך לא תקין', 'בחרו היום או תאריך עתידי.');
     if (kind === 'strength' && !routine) return Alert.alert('בחרו רוטינה', 'צרו רוטינה בלשונית כוח ואז שובו לתכנון.');
     if (kind !== 'strength' && !title.trim()) return Alert.alert('חסר שם', 'הוסיפו שם לאימון.');
     setBusy(true);
@@ -52,7 +52,7 @@ export function PlanningEditor({ date, onClose }: { date: string; onClose: () =>
     <Segmented options={[{ value: 'strength', label: 'כוח' }, { value: 'run', label: 'ריצה' }, { value: 'crossfit', label: 'קרוספיט' }]} value={kind} onChange={value => { setKind(value); if (title === 'ריצה' || title === 'קרוספיט') setTitle(value === 'crossfit' ? 'קרוספיט' : 'ריצה'); }} />
     {mode === 'weekly' ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>{weekdays.map((day, i) => <Button key={day} title={day} size="sm" variant={weekday === String(i) ? 'primary' : 'secondary'} onPress={() => setWeekday(String(i))} />)}</View> : null}
     {kind === 'strength' ? <Button title={routine?.name ?? 'בחירת רוטינה'} variant="secondary" onPress={() => setPicker(true)} /> : <Field label="שם האימון" value={title} onChangeText={setTitle} />}
-    <Field label={mode === 'weekly' ? 'החל מתאריך (YYYY-MM-DD)' : 'תאריך (YYYY-MM-DD)'} value={selectedDate} onChangeText={setSelectedDate} autoCapitalize="none" style={{ writingDirection: 'ltr' }} />
+    <DateStepper label={mode === 'weekly' ? 'החל מתאריך' : 'תאריך'} value={selectedDate} min={today()} onChange={setSelectedDate} />
     {kind === 'run' ? <Text style={[font.tiny, { marginBottom: 12 }]}>אם קיימת תוכנית ריצה מפורטת לאותו יום, היא תופיע במקום הריצה הקבועה.</Text> : null}
     <Button title="שמירת אימון" loading={busy} disabled={busy} onPress={save} />
     <Text style={[font.h3, { marginVertical: 14 }]}>החלוקה השבועית שלי</Text>
@@ -68,7 +68,7 @@ export function MoveSession({ session, onClose }: { session: Session; onClose: (
   const [date, setDate] = useState(session.date);
   const [busy, setBusy] = useState(false);
   async function save() {
-    if (!validDate(date) || date < today()) return Alert.alert('תאריך לא תקין', 'בחרו היום או תאריך עתידי בפורמט YYYY-MM-DD.');
+    if (!validDate(date) || date < today()) return Alert.alert('תאריך לא תקין', 'בחרו היום או תאריך עתידי.');
     setBusy(true);
     try {
       await updatePlanning(d => {
@@ -80,7 +80,7 @@ export function MoveSession({ session, onClose }: { session: Session; onClose: (
     finally { setBusy(false); }
   }
   return <Sheet visible onClose={onClose} title={`העברת ${session.title}`}>
-    <Field label="תאריך חדש (YYYY-MM-DD)" value={date} onChangeText={setDate} style={{ writingDirection: 'ltr' }} />
+    <DateStepper label="תאריך חדש" value={date} min={today()} onChange={setDate} />
     <Text style={[font.small, { marginBottom: 12 }]}>השינוי חל על האימון הזה בלבד.</Text>
     <Button title="העברת האימון" disabled={busy} loading={busy} onPress={save} />
   </Sheet>;

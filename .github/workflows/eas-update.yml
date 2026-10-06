@@ -1,13 +1,15 @@
-# Every push to main: typecheck, run tests, publish an Android OTA update to the phone.
-name: Publish update
+# Pushes to main are checked only. A release tag (release-*) or a manual run
+# checks again and then publishes an Android OTA update to the phone.
+name: Check and publish
 
 on:
   push:
     branches: [main]
+    tags: ['release-*']
   workflow_dispatch:
 
 concurrency:
-  group: eas-update
+  group: eas-update-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -25,6 +27,7 @@ jobs:
       - run: npm run check
       - run: TZ=Asia/Jerusalem npm run test:planning
       - name: Publish
+        if: startsWith(github.ref, 'refs/tags/release-') || github.event_name == 'workflow_dispatch'
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: npx eas-cli update --channel production --environment production --platform android --message "${{ github.event.head_commit.message || 'manual publish' }}" --non-interactive
+        run: npx eas-cli update --channel production --environment production --platform android --message "${{ github.ref_name }}" --non-interactive

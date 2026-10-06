@@ -5,8 +5,8 @@ import { Alert, Pressable, Text, View, useWindowDimensions } from 'react-native'
 import { BarChart } from '../../src/components/charts';
 import { PaceRange } from '../../src/components/run';
 import { Sheet, toast } from '../../src/components/sheet';
-import { Button, Card, Chip, Field, Row, Screen, SectionTitle } from '../../src/components/ui';
-import { toISODate } from '../../src/lib/dates';
+import { Button, Card, Chip, DateStepper, Field, Row, Screen, SectionTitle } from '../../src/components/ui';
+import { addDays, toISODate, today } from '../../src/lib/dates';
 import { PHASE_HE, RACE_DISTANCES, ZONE_INFO, formatDuration, formatPace, parseTime } from '../../src/run/format';
 import { R, addRace, deleteRace, latestAssessment, recalibratePlan, upcomingRaces, useRunVersion, weeklyKm } from '../../src/run/store';
 import type { Race } from '../../src/run/types';
@@ -193,7 +193,7 @@ function Record({ icon, color, label, value, unit }: { icon: keyof typeof Ionico
 
 function AddRace({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const [name, setName] = useState('');
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(() => addDays(today(), 84));
   const [dist, setDist] = useState(21.0975);
   const [target, setTarget] = useState('');
   const [priority, setPriority] = useState<Race['priority']>('A');
@@ -225,7 +225,7 @@ function AddRace({ visible, onClose }: { visible: boolean; onClose: () => void }
   return (
     <Sheet visible={visible} onClose={onClose} title="מרוץ חדש" footer={<Button title="הוספה" onPress={submit} />}>
       <Field label="שם" value={name} onChangeText={setName} placeholder="למשל: מרתון תל אביב" />
-      <Field label="תאריך (שנה-חודש-יום)" value={date} onChangeText={setDate} placeholder="2027-02-26" keyboardType="numbers-and-punctuation" />
+      <DateStepper label="תאריך המרוץ" value={date} min={today()} months onChange={setDate} />
       <Text style={[font.small, { marginBottom: 6, fontWeight: '600' }]}>מרחק</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: spacing.md }}>
         {RACE_DISTANCES.map((d) => (

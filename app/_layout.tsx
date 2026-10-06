@@ -2,8 +2,8 @@ import { syncAdaptations } from '../src/planning/runtime';
 import * as Notifications from 'expo-notifications';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import { ActivityIndicator, AppState, I18nManager, Platform, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, AppState, I18nManager, Platform, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ToastHost } from '../src/components/sheet';
 import { autoBackup, initCloud } from '../src/lib/cloud';
@@ -15,7 +15,8 @@ import { validDate } from '../src/planning/model';
 import { today } from '../src/lib/dates';
 import { useApp } from '../src/state/store';
 import { initLift, useLift } from '../src/strength/store';
-import { colors } from '../src/theme';
+import { Button } from '../src/components/ui';
+import { colors, font } from '../src/theme';
 
 // Hebrew UI: the native config plugin forces RTL in builds; this covers Expo Go (applies after a restart).
 if (!I18nManager.isRTL) {
@@ -42,8 +43,12 @@ export default function RootLayout() {
   const planning = usePlanning();
   const router = useRouter();
   const segments = useSegments();
+  const [initError, setInitError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const activeDay = useRef(today());
 
   useEffect(() => {
+    setInitError(false);
     (async () => {
       await init();
       await Promise.all([initLift().then(initPlanning), initRun(), initCloud().catch(() => {})]);
@@ -58,13 +63,19 @@ export default function RootLayout() {
       await syncIfStale();
       await recalibrateIfStale();
       syncHealthWeights().then((n) => n && useApp.getState().bump()).catch(() => {});
-    })().catch((e) => console.error('init failed', e));
-  }, [init]);
+    })().catch((e) => { console.error('init failed', e); setInitError(true); });
+  }, [init, attempt]);
 
   // Coming back to the app: pick up new runs.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
       if (s === 'active') {
+        // Past midnight: a log screen left on yesterday moves to the new day.
+        const now = today();
+        if (now !== activeDay.current) {
+          if (useApp.getState().selectedDate === activeDay.current) useApp.getState().setSelectedDate(now);
+          activeDay.current = now;
+        }
         syncAdaptations().then(syncReminders).catch(e => console.warn('training sync failed', e));
         syncIfStale().then(recalibrateIfStale).catch(e => console.warn('run sync failed', e));
         syncHealthWeights().then((n) => n && useApp.getState().bump()).catch(() => {});
@@ -103,6 +114,15 @@ export default function RootLayout() {
     if (profile.onboarded && inOnboarding) router.replace('/');
   }, [ready, profile, segments, router]);
 
+  if ((!ready || !liftReady || !planning.ready) && initError) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg, padding: 32, gap: 16 }}>
+        <Text style={[font.h2, { textAlign: 'center' }]}>הטעינה לא הצליחה</Text>
+        <Text style={[font.small, { textAlign: 'center' }]}>הנתונים שלך שמורים במכשיר. נסו שוב; אם זה חוזר, סגרו את האפליקציה ופתחו מחדש.</Text>
+        <Button title="לנסות שוב" onPress={() => setAttempt((n) => n + 1)} />
+      </View>
+    );
+  }
   if (!ready || !liftReady || !planning.ready) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>

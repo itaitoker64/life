@@ -92,7 +92,7 @@ export function NumCell({
       placeholderTextColor={colors.faint}
       style={{
         width,
-        height: 36,
+        height: 44,
         borderRadius: 9,
         backgroundColor: done ? 'transparent' : colors.elev2,
         color: colors.text,

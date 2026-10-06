@@ -1,7 +1,7 @@
 // Live workout screen, ported from lift/js/views/workout.js.
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useKeepAwake } from 'expo-keep-awake';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, TextInput, Vibration, View } from 'react-native';
@@ -69,7 +69,11 @@ function touch() {
 
 export default function WorkoutScreen() {
   useLiftVersion();
-  useKeepAwake();
+  // Keep the screen on during a workout; a refused wake lock must never break the screen.
+  useEffect(() => {
+    activateKeepAwakeAsync('workout').catch(() => {});
+    return () => { try { Promise.resolve(deactivateKeepAwake('workout')).catch(() => {}); } catch {} };
+  }, []);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const a = L.active;
@@ -609,7 +613,7 @@ function ExerciseCard({
         <Text style={[font.tiny, { flex: 1, textAlign: 'center' }]}>קודם</Text>
         <Text style={[font.tiny, { width: 70, textAlign: 'center' }]}>{isCardio ? 'דקות' : unitLabel()}</Text>
         <Text style={[font.tiny, { width: 58, textAlign: 'center' }]}>{isCardio ? 'ק״מ' : 'חזרות'}</Text>
-        <View style={{ width: 44 }} />
+        <View style={{ width: 48 }} />
       </Row>
       {it.sets.map((st, si) => {
         const p = prevFor(si);
@@ -625,6 +629,8 @@ function ExerciseCard({
             >
               <View style={{ width: 36, alignItems: 'center' }}>
                 <Pressable
+                  hitSlop={8}
+                  accessibilityLabel="סוג הסט (לחיצה ארוכה למחיקה)"
                   onLongPress={() => removeSet(si)}
                   onPress={() => {
                     st.type = SET_TYPES[(SET_TYPES.indexOf(st.type) + 1) % SET_TYPES.length];
@@ -674,8 +680,8 @@ function ExerciseCard({
                 onPress={() => toggleDone(si)}
                 accessibilityLabel="סימון סט"
                 style={{
-                  width: 40,
-                  height: 36,
+                  width: 44,
+                  height: 44,
                   marginStart: 4,
                   borderRadius: 9,
                   alignItems: 'center',

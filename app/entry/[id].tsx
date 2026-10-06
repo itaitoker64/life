@@ -9,7 +9,8 @@ import {
   type EditableIngredient,
 } from '../../src/components/IngredientList';
 import { Button, Card, Field, Row, Screen, Segmented, Stat, parseNum } from '../../src/components/ui';
-import { deleteEntry, getEntry, updateEntry } from '../../src/db/log';
+import { addEntry, deleteEntry, getEntry, updateEntry } from '../../src/db/log';
+import { toast } from '../../src/components/sheet';
 import { MEAL_OPTS, parseComponents, type LogEntry, type Meal } from '../../src/db/types';
 import { useApp } from '../../src/state/store';
 import { colors, font, spacing } from '../../src/theme';
@@ -64,9 +65,12 @@ export default function EditEntry() {
   }
 
   async function remove() {
-    await deleteEntry(entry!.id);
+    const removed = entry!;
+    await deleteEntry(removed.id);
     bump();
     router.back();
+    const { id: _id, ...input } = removed;
+    toast(`${removed.name} נמחק`, { action: { label: 'ביטול', onPress: () => { addEntry(input).then(bump).catch(() => {}); } } });
   }
 
   return (

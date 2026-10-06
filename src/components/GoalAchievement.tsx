@@ -59,7 +59,7 @@ function GoalBar({ label, value, target, unit, color, range = false }: { label: 
   const exceeded = range && ratio > 1.1;
   const tint = reached ? colors.success : exceeded ? colors.warning : color;
   return <View style={{ marginBottom: 14 }}>
-    <Row style={{ justifyContent: 'space-between', gap: 8 }}><Text style={font.body}>{label}</Text><Text style={font.small}>{value.toLocaleString('he-IL', { maximumFractionDigits: 1 })} / {target > 0 ? target.toLocaleString('he-IL') : '—'} {unit}</Text></Row>
+    <Row style={{ justifyContent: 'space-between', gap: 8 }}><Text style={font.body}>{label}</Text><Text style={font.small}>{value.toLocaleString('he-IL', { maximumFractionDigits: unit === 'ק״מ' ? 1 : 0 })} / {target > 0 ? target.toLocaleString('he-IL') : '—'} {unit}</Text></Row>
     <View accessibilityRole="progressbar" accessibilityLabel={label} accessibilityValue={target > 0 ? { min: 0, max: target, now: Math.min(value, target), text: `${Math.round(ratio * 100)} אחוז מהיעד` } : { text: 'לא הוגדר יעד' }} style={{ height: 10, backgroundColor: colors.track, borderRadius: 5, overflow: 'hidden', marginTop: 7 }}>
       <View style={{ height: '100%', width: `${Math.min(100, Math.max(0, ratio * 100))}%`, backgroundColor: tint, borderRadius: 5 }} />
     </View>

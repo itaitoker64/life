@@ -15,6 +15,7 @@ import {
   type ViewProps,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { addDays, formatLongDate, today } from '../lib/dates';
 import { TAP, chevronForward, colors, font, gradient, radius, spacing } from '../theme';
 
 export function Screen({
@@ -453,3 +454,29 @@ export const styles = StyleSheet.create({
   segment: { flex: 1, minHeight: 44, justifyContent: 'center', paddingVertical: 8, borderRadius: 9, alignItems: 'center' },
   segmentActive: { backgroundColor: colors.card },
 });
+
+/** Date chooser without typing: day and week steps around a readable date. */
+export function DateStepper({ label, value, onChange, min, max, months }: { label?: string; value: string; onChange: (date: string) => void; min?: string; max?: string; months?: boolean }) {
+  const valid = validISO(value) ? value : today();
+  const move = (n: number) => {
+    let next = addDays(valid, n);
+    if (min && next < min) next = min;
+    if (max && next > max) next = max;
+    onChange(next);
+  };
+  return (
+    <View style={{ marginBottom: spacing.md }}>
+      {label ? <Text style={styles.label}>{label}</Text> : null}
+      <Text style={[font.h3, { textAlign: 'center', marginBottom: spacing.sm }]}>{formatLongDate(valid)}</Text>
+      <Row style={{ gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <Button title="שבוע אחורה" size="sm" variant="secondary" disabled={!!min && valid <= min} onPress={() => move(-7)} />
+        <Button title="יום אחורה" size="sm" variant="secondary" disabled={!!min && valid <= min} onPress={() => move(-1)} />
+        <Button title="יום קדימה" size="sm" variant="secondary" disabled={!!max && valid >= max} onPress={() => move(1)} />
+        <Button title="שבוע קדימה" size="sm" variant="secondary" disabled={!!max && valid >= max} onPress={() => move(7)} />
+        {months ? <Button title="4 שבועות אחורה" size="sm" variant="ghost" disabled={!!min && valid <= min} onPress={() => move(-28)} /> : null}
+        {months ? <Button title="4 שבועות קדימה" size="sm" variant="ghost" disabled={!!max && valid >= max} onPress={() => move(28)} /> : null}
+      </Row>
+    </View>
+  );
+}
+function validISO(s: string) { return /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s)); }
