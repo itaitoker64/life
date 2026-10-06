@@ -93,14 +93,14 @@ export default function Spontaneous() {
     } catch { setError('לא ניתן לשמור את ההתאמה. נסו שוב.'); } finally { setSaving(false); }
   }
   return <Screen><Title sub={`${date} · התאמה חד־פעמית`}>חדר כושר מזדמן</Title>
-    <Card><Text style={font.h3}>1 · האימון שאותו מתאימים</Text>{choices.map(p => <Button key={p.id} size="sm" title={`${KIND_LABEL[p.kind]} · ${p.title}`} variant={sourceId === p.id ? 'primary' : 'secondary'} onPress={() => { setSourceId(p.id); setKind(p.kind); setMinutes(String(p.minutes ?? 45)); setDraft(null); }} />)}
+    <Card style={{ gap: 12 }}><Text style={font.h3}>1 · האימון שאותו מתאימים</Text>{choices.map(p => <Button key={p.id} size="sm" title={`${KIND_LABEL[p.kind]} · ${p.title}`} variant={sourceId === p.id ? 'primary' : 'secondary'} onPress={() => { setSourceId(p.id); setKind(p.kind); setMinutes(String(p.minutes ?? 45)); setDraft(null); }} />)}
       <Button title="אימון חדש מעבר לתכנון" size="sm" variant={!sourceId ? 'primary' : 'secondary'} onPress={() => { setSourceId(undefined); setDraft(null); }} />
       {!source ? <Segmented options={(['strength','run','crossfit'] as const).map(value => ({ value, label: KIND_LABEL[value] }))} value={kind} onChange={value => { setKind(value); setDraft(null); }} /> : null}
       {source?.adjustment ? <Text style={font.small}>{source.adjustment.reason}</Text> : null}
       <Field label="מסגרת זמן בדקות (15–120)" value={minutes} keyboardType="numeric" onChangeText={value => { setMinutes(value); setDraft(null); }} />
       <Text style={font.tiny}>{source ? 'ההתאמה מחליפה את השיבוץ רק אחרי סיום האימון. החלוקה והרוטינה המקורית נשמרות.' : 'זה אימון נוסף. לאחר שיישמר, העומס שלו יילקח בחשבון בהמשך השבוע.'}</Text>
     </Card>
-    <Card><Text style={font.h3}>2 · צילום וזיהוי ציוד</Text><Text style={font.small}>צלמו עד שלוש זוויות של הציוד. בלחיצה על זיהוי התמונות נשלחות ל־Gemini עם המפתח שלך. אפשר גם לבחור ציוד ידנית ללא תמונות או מפתח.</Text>
+    <Card style={{ gap: 12 }}><Text style={font.h3}>2 · צילום וזיהוי ציוד</Text><Text style={font.small}>צלמו עד שלוש זוויות של הציוד. בלחיצה על זיהוי התמונות נשלחות ל־Gemini עם המפתח שלך. אפשר גם לבחור ציוד ידנית ללא תמונות או מפתח.</Text>
       <Row style={{ gap: 8, flexWrap: 'wrap' }}><Button title="צילום החדר" onPress={() => pick(true)} disabled={busy || photos.length >= 3} /><Button title="בחירה מהגלריה" variant="secondary" onPress={() => pick(false)} disabled={busy || photos.length >= 3} /></Row>
       <Row style={{ gap: 8, flexWrap: 'wrap' }}>{photos.map((photo, index) => <Pressable key={`${photo.uri}:${index}`} accessibilityRole="button" accessibilityLabel={`מחיקת תמונה ${index + 1}`} disabled={busy} onPress={() => { revision.current++; setPhotos(p => p.filter((_, i) => i !== index)); setObservations([]); setNotes(''); setDraft(null); }}><Image source={{ uri: photo.uri }} style={{ width: 88, height: 88, borderRadius: 10, marginVertical: 8 }} /><Text style={font.tiny}>מחיקת תמונה</Text></Pressable>)}</Row>
       {keyReady === false ? <ApiKeyPrompt description="זיהוי ציוד בחדר כושר משתמש באותו מפתח Gemini כמו זיהוי אוכל. אפשר להוסיף מפתח, או להמשיך עם בחירת ציוד ידנית." onSaved={() => setKeyReady(true)} /> : null}
@@ -109,14 +109,14 @@ export default function Spontaneous() {
       {notes ? <Text style={font.small}>{notes}</Text> : null}
       {observations.map((o, i) => <Text key={`${o.equipment}:${i}`} style={font.tiny}>{EQUIPMENT[o.equipment]} · {o.confidence === 'high' ? 'זיהוי ברור' : 'דרוש אישור ידני'} · {o.evidence}</Text>)}
     </Card>
-    <Card><Text style={font.h3}>3 · אישור הציוד והמקום</Text><Text style={font.small}>רק ציוד שסומן כאן ישמש באימון. בדקו במיוחד חיבורים בפולי וסוג מכונת הרגליים; תמונה אינה מאשרת את תקינותם.</Text>
+    <Card style={{ gap: 12 }}><Text style={font.h3}>3 · אישור הציוד והמקום</Text><Text style={font.small}>רק ציוד שסומן כאן ישמש באימון. בדקו במיוחד חיבורים בפולי וסוג מכונת הרגליים; תמונה אינה מאשרת את תקינותם.</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>{(Object.keys(EQUIPMENT) as EquipmentKey[]).map(key => <Button key={key} title={EQUIPMENT[key]} size="sm" disabled={busy} variant={gym.equipment.includes(key) ? 'primary' : 'secondary'} onPress={() => changeGym({ ...gym, equipment: gym.equipment.includes(key) ? gym.equipment.filter(e => e !== key) : [...gym.equipment, key] })} />)}</View>
       <Text style={[font.h3, { marginTop: 14 }]}>מגבלות במקום</Text>
       {([{ key: 'smallSpace', label: 'מרחב קטן' }, { key: 'noFloor', label: 'אין אפשרות לשכב על הרצפה' }, { key: 'noOverhead', label: 'אין אפשרות לעבוד מעל הראש' }, { key: 'noJumping', label: 'ללא קפיצות' }] as const).map(option => <Button key={option.key} title={`${gym[option.key] ? '✓ ' : ''}${option.label}`} size="sm" disabled={busy} variant={gym[option.key] ? 'primary' : 'secondary'} onPress={() => changeGym({ ...gym, [option.key]: !gym[option.key] })} />)}
       <Button title="אישור הציוד ויצירת התאמה" onPress={preview} disabled={busy} />
     </Card>
     {error ? <Text style={[font.small, { color: colors.danger }]}>{error}</Text> : null}
-    {draft ? <Card><Text style={font.h3}>4 · האימון המותאם</Text><Text style={font.small}>{draft.instructions}</Text>
+    {draft ? <Card style={{ gap: 12 }}><Text style={font.h3}>4 · האימון המותאם</Text><Text style={font.small}>{draft.instructions}</Text>
       {draft.rows.map(row => { const ex = L.exercises.find(e => e.id === row.exerciseId), original = L.exercises.find(e => e.id === row.originalId); return <View key={row.exerciseId} style={{ borderTopWidth: 1, borderColor: colors.border, paddingVertical: 12 }}><Text style={font.h3}>{ex?.nameHe ?? ex?.name}</Text>{row.changed && original ? <Text style={font.tiny}>במקום {original.nameHe ?? original.name}</Text> : null}<Text style={font.small}>{row.item.sets.length} {kind === 'crossfit' ? 'סבבים' : 'סטים'} · {(ex?.tracking === 'cardio' ? row.item.sets[0]?.weight : row.item.sets[0]?.reps) || 'בחירה באימון'} {ex?.tracking === 'cardio' ? 'דקות' : 'חזרות'} · {ex?.tracking === 'cardio' ? 'קצב שמאפשר שיחה' : 'המשקל נבחר באימון'}</Text><Text style={font.tiny}>{row.reason}</Text></View>; })}
       {draft.omitted.length ? <View><Text style={[font.h3, { color: colors.warning }]}>מה לא ניתן לבצע כאן</Text>{draft.omitted.map((message, i) => <Text key={i} style={font.small}>{message}</Text>)}<Text style={font.tiny}>אלה לא ייחשבו כתרגילים שבוצעו ולא יתווספו אוטומטית כאימוני פיצוי.</Text></View> : null}
       <Button title="שמירת טיוטה" variant="secondary" disabled={saving || !draft.rows.length} onPress={() => save(false)} />

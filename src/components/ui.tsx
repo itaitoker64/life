@@ -135,6 +135,8 @@ export function Button({
   );
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!rest.disabled, busy: !!loading }}
       style={({ pressed }) => [
         styles.button,
         size === 'sm' && styles.buttonSm,
@@ -163,6 +165,7 @@ export function IconButton({
   size = 22,
   bg,
   disabled,
+  accessibilityLabel,
 }: {
   name: keyof typeof Ionicons.glyphMap;
   onPress?: () => void;
@@ -170,9 +173,12 @@ export function IconButton({
   size?: number;
   bg?: string;
   disabled?: boolean;
+  accessibilityLabel?: string;
 }) {
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? (name === 'settings-outline' ? 'הגדרות' : name)}
       onPress={onPress}
       disabled={disabled}
       hitSlop={6}
@@ -252,7 +258,7 @@ export function Segmented<T extends string>({
       {options.map((o) => {
         const active = o.value === value;
         return (
-          <Pressable key={o.value} onPress={() => onChange(o.value)} style={[styles.segment, active && styles.segmentActive]}>
+          <Pressable accessibilityRole="tab" accessibilityState={{ selected: active }} key={o.value} onPress={() => onChange(o.value)} style={[styles.segment, active && styles.segmentActive]}>
             <Text style={{ color: active ? colors.text : colors.muted, fontWeight: '700', fontSize: 13 }} numberOfLines={1}>
               {o.label}
             </Text>
@@ -372,7 +378,7 @@ export const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 14,
+    padding: 16,
     marginBottom: spacing.md,
   },
   cardHeader: {
@@ -399,7 +405,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  buttonSm: { minHeight: 38, paddingHorizontal: 12, borderRadius: radius.sm },
+  buttonSm: { minHeight: 44, paddingHorizontal: 12, borderRadius: radius.sm },
   chip: { paddingVertical: 7, paddingHorizontal: 13, borderRadius: radius.pill, borderWidth: 1 },
   label: { ...font.small, marginBottom: 6, fontWeight: '600' },
   inputWrap: {
@@ -423,6 +429,6 @@ export const styles = StyleSheet.create({
     padding: 3,
     marginBottom: spacing.md,
   },
-  segment: { flex: 1, paddingVertical: 8, borderRadius: 9, alignItems: 'center' },
+  segment: { flex: 1, minHeight: 44, justifyContent: 'center', paddingVertical: 8, borderRadius: 9, alignItems: 'center' },
   segmentActive: { backgroundColor: colors.card },
 });

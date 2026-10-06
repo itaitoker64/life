@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NoPlanCard, PaceRange, ReadinessCard, RunHero, RunWeekStrip } from '../../src/components/run';
 import { Menu, toast } from '../../src/components/sheet';
 import { CoachLink, DeloadCard, MuscleCard, RoutineCard, StrengthHero, WeekGoalCard, useStartWorkout } from '../../src/components/strengthCards';
-import { Button, Card, ListRow, Row, SectionTitle, Segmented } from '../../src/components/ui';
+import { Button, Card, ListRow, Row, SectionTitle, Segmented, Title } from '../../src/components/ui';
 import { addDays, toISODate, weekdayNarrow } from '../../src/lib/dates';
 import { WORKOUT_META } from '../../src/run/format';
 import { R, hasIntervals, latestAssessment, planFor, recalibratePlan, syncIntervals, useRun, useRunVersion } from '../../src/run/store';
@@ -21,22 +21,23 @@ import { chevronBack, chevronForward, colors, font, radius, spacing } from '../.
 export default function Train() {
   const routerForTraining = useRouter();
   const params = useLocalSearchParams<{ tab?: string }>();
-  const [tab, setTab] = useState<'strength' | 'run' | 'journal'>(params.tab === 'journal' ? 'journal' : params.tab === 'run' ? 'run' : 'strength');
+  const [tab, setTab] = useState<'strength' | 'run' | 'journal'>(params.tab === 'strength' ? 'strength' : params.tab === 'run' ? 'run' : 'journal');
   useEffect(() => {
     if (params.tab === 'run' || params.tab === 'strength' || params.tab === 'journal') setTab(params.tab);
   }, [params.tab]);
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'left', 'right']}>
       <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm }}>
+        <Title sub="התוכנית שלך, כל סוגי האימון במקום אחד">אימונים</Title>
         <Segmented
           options={[
+            { value: 'journal', label: 'השבוע שלך' },
             { value: 'strength', label: 'כוח' },
             { value: 'run', label: 'ריצה' },
-            { value: 'journal', label: 'יומן' },
           ]}
           value={tab}
           onChange={setTab}
-          style={{ marginBottom: 0 }}
+          style={{ marginBottom: 8 }}
         />
       </View>
       {tab !== 'journal' ? <Row style={{ paddingHorizontal: spacing.lg, gap: 8, flexWrap: 'wrap' }}><Button title="תוכנית משולבת" size="sm" onPress={() => routerForTraining.push('/training/plan')} /><Button title="חדר כושר מזדמן" size="sm" variant="secondary" onPress={() => routerForTraining.push('/training/spontaneous')} /></Row> : null}

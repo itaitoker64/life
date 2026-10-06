@@ -23,6 +23,7 @@ export function TrainingJournal() {
   useEffect(() => { if (params.date && validDate(params.date)) setSelected(params.date); }, [params.date]);
   const [kind, setKind] = useState<'all' | TrainingKind>('all');
   const [period, setPeriod] = useState<'day' | 'past' | 'next'>('day');
+  const [showSettings, setShowSettings] = useState(false);
   const [logging, setLogging] = useState(false);
   const [scheduling, setScheduling] = useState(false);
   const [moving, setMoving] = useState<Session | null>(null);
@@ -58,15 +59,19 @@ export function TrainingJournal() {
     } catch { Alert.alert('הביטול נכשל', 'נסו שוב.'); }
   }
   return <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 40 }}>
-    <Title sub="כוח, ריצה וקרוספיט · אימונים שבוצעו ותוכנית להמשך">יומן אימונים</Title>
     <Row style={{ gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-      <Button title="תוכנית משולבת" size="sm" onPress={() => router.push('/training/plan')} />
-      <Button title="חדר כושר מזדמן" size="sm" variant="secondary" onPress={() => router.push('/training/spontaneous')} />
-      <Button title="תכנון שבועי / שיבוץ" size="sm" disabled={!ready} onPress={() => setScheduling(true)} />
-      <Button title="ביצעתי אימון אחר / עדכון עומס" size="sm" onPress={() => setLogging(true)} />
-      <Button title="תזכורות" size="sm" variant="secondary" onPress={() => router.push('/reminders')} />
+      <Button title="שיבוץ אימון" disabled={!ready} onPress={() => setScheduling(true)} />
+      <Button title="אימון אחר / WOD" variant="secondary" onPress={() => setLogging(true)} />
+      <Button title={showSettings ? 'סגירת אפשרויות' : 'תוכנית ואפשרויות'} variant="ghost" onPress={() => setShowSettings(v => !v)} />
     </Row>
+    {showSettings ? <>
+      <Row style={{ gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+        <Button title="תוכנית משולבת" variant="secondary" onPress={() => router.push('/training/plan')} />
+        <Button title="צילום חדר כושר" variant="secondary" onPress={() => router.push('/training/spontaneous')} />
+        <Button title="תזכורות" variant="secondary" onPress={() => router.push('/reminders')} />
+      </Row>
     <Card><Text style={font.h3}>התאמה חכמה</Text><Text style={font.small}>עומס כוח, ריצה וקרוספיט נבדק יחד. ההזזות ביומן משנות גם תזכורות. העצימות האוטומטית משוערת; אפשר לעדכן אותה לאחר האימון. אם אין יום פנוי, האימון הבא מתחיל בעומס מופחת. החלוקה המקורית נשמרת.</Text><Button title={data.adaptationEnabled === false ? 'הפעלת התאמה' : 'כיבוי התאמה'} size="sm" variant="ghost" onPress={() => updatePlanning(d => ({ ...d, adaptationEnabled: d.adaptationEnabled === false })).catch(() => Alert.alert('השמירה נכשלה'))} /></Card>
+    </> : null}
     <Segmented options={[{ value: 'all', label: 'הכול' }, { value: 'strength', label: 'כוח' }, { value: 'run', label: 'ריצה / אירובי' }, { value: 'crossfit', label: 'קרוספיט' }]} value={kind} onChange={setKind} />
     <Card>
       <Row style={{ justifyContent: 'space-between', marginBottom: 12 }}>

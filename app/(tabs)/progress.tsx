@@ -8,10 +8,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BarChart, TrendChart } from '../../src/components/charts';
 import { LinkRowSmall } from '../../src/components/run';
 import { ModeToggle, WeeklyNutrition, type NutritionMode } from '../../src/components/WeeklyNutrition';
-import { Card, Row, SectionTitle, Title } from '../../src/components/ui';
+import { Card, Row, SectionTitle, Segmented, Title } from '../../src/components/ui';
 import { dailyTotals, type DailyTotal } from '../../src/db/log';
 import { expenditureSeries, weightSeries, type ExpenditureSeries, type WeightSeries } from '../../src/lib/analytics';
-import { type ISODate } from '../../src/lib/dates';
+import { formatShortDate, type ISODate } from '../../src/lib/dates';
 import { weekDays } from '../../src/lib/series';
 import { kgToDisplay, weightLabel } from '../../src/lib/units';
 import { formatPace } from '../../src/run/format';
@@ -27,6 +27,7 @@ export default function Progress() {
   const { width } = useWindowDimensions();
   useLiftVersion();
   useRunVersion();
+  const [section, setSection] = useState<'summary' | 'nutrition' | 'training'>('summary');
   const [mode, setMode] = useState<NutritionMode>('remaining');
   const [totals, setTotals] = useState<Map<ISODate, DailyTotal>>(new Map());
   const [monthTotals, setMonthTotals] = useState<DailyTotal[]>([]);
@@ -59,7 +60,7 @@ export default function Progress() {
   if (!profile) return null;
   const units = profile.units;
   const cardW = (width - spacing.lg * 2 - spacing.md) / 2;
-  const chartW = width - spacing.lg * 2 - 30;
+  const chartW = width - spacing.lg * 2 - 34;
   const lastTrend = wt?.trend.filter((v) => v != null).slice(-1)[0] ?? null;
   const lastTdee = exp?.tdee.filter((v) => v != null).slice(-1)[0] ?? profile.tdee;
   const vol = weeklyVolume(12);
@@ -72,12 +73,16 @@ export default function Progress() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-        <Title>התקדמות</Title>
+        <Title sub="עקביות לאורך זמן, מעבר למספר של היום">התקדמות</Title>
+        <Segmented options={[{ value: 'summary', label: 'תמונה כללית' }, { value: 'nutrition', label: 'תזונה ומשקל' }, { value: 'training', label: 'ביצועים' }]} value={section} onChange={setSection} />
+        {section === 'summary' ? <>
         <WeeklyReview days={days} totals={totals} loading={loading} error={loadError} />
         {!loading && !loadError ? <GoalAchievement days={days} totals={totals} selected={selectedDate} /> : null}
-        <MonthlyTrends totals={monthTotals} loading={loading} error={loadError} />
 
+        </> : null}
+        {section === 'nutrition' ? <>
         <SectionTitle>תזונה השבוע</SectionTitle>
+        <Text style={[font.small, { marginBottom: 12 }]}>{formatShortDate(days[0])} – {formatShortDate(days[6])}</Text>
         <Card>
           <WeeklyNutrition
             days={days}
@@ -98,7 +103,7 @@ export default function Progress() {
               <TrendChart
                 compact
                 holdingLast
-                width={cardW - 30}
+                width={cardW - 34}
                 height={60}
                 color={colors.expenditure}
                 bandColor={colors.expenditureSoft}
@@ -116,7 +121,7 @@ export default function Progress() {
             {wt && wt.dates.length ? (
               <TrendChart
                 compact
-                width={cardW - 30}
+                width={cardW - 34}
                 height={60}
                 color={colors.weight}
                 points={wt.dates.map((_, i) => ({ trend: wt.trend[i] != null ? kgToDisplay(wt.trend[i]!, units) : null }))}
@@ -129,6 +134,9 @@ export default function Progress() {
           </InsightCard>
         </Row>
 
+        </> : null}
+        {section === 'training' ? <>
+        <MonthlyTrends totals={monthTotals} loading={loading} error={loadError} />
         <SectionTitle right={<LinkRowSmall label="עוד" onPress={() => router.push('/strength/stats')} />}>כוח · נפח שבועי ({unitLabel()})</SectionTitle>
         <Card>
           <BarChart
@@ -177,6 +185,7 @@ export default function Progress() {
             <Mini label="הקצב המהיר" value={fastest ? formatPace(fastest.avg_pace_sec_per_km) : '—'} />
           </Row>
         </Card>
+        </> : null}
       </ScrollView>
     </SafeAreaView>
   );

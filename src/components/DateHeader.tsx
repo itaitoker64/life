@@ -10,15 +10,15 @@ export function DateHeader({ title }: { title: string }) {
   const long = formatLongDate(selectedDate);
   return (
     <View style={{ marginBottom: spacing.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Pressable onPress={() => setSelectedDate(today())}>
-        <Text style={font.h1}>{isToday ? title : formatDateLabel(selectedDate)}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel="חזרה להיום" style={{ flex: 1 }} onPress={() => setSelectedDate(today())}>
+        <Text style={font.h2}>{isToday ? title : formatDateLabel(selectedDate)}</Text>
         <Text style={font.small}>{long}</Text>
       </Pressable>
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-        <Pressable onPress={() => setSelectedDate(addDays(selectedDate, -1))} hitSlop={8} style={navBtn}>
+        <Pressable accessibilityRole="button" accessibilityLabel="יום קודם" onPress={() => setSelectedDate(addDays(selectedDate, -1))} hitSlop={8} style={navBtn}>
           <Ionicons name={chevronBack} size={20} color={colors.text} />
         </Pressable>
-        <Pressable onPress={() => setSelectedDate(addDays(selectedDate, 1))} hitSlop={8} style={navBtn}>
+        <Pressable accessibilityRole="button" accessibilityLabel="יום הבא" onPress={() => setSelectedDate(addDays(selectedDate, 1))} hitSlop={8} style={navBtn}>
           <Ionicons name={chevronForward} size={20} color={colors.text} />
         </Pressable>
       </View>
@@ -27,8 +27,8 @@ export function DateHeader({ title }: { title: string }) {
 }
 
 const navBtn = {
-  width: 36,
-  height: 36,
+  width: 44,
+  height: 44,
   borderRadius: 18,
   backgroundColor: colors.elev2,
   alignItems: 'center' as const,

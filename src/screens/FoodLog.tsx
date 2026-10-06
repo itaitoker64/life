@@ -4,8 +4,9 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, Text, View } from 'react-native';
 import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler';
+import { MacroBar } from '../components/charts';
 import { DateHeader } from '../components/DateHeader';
-import { Row, styles as ui } from '../components/ui';
+import { Button, Card, Row, styles as ui } from '../components/ui';
 import { entriesForDate, moveEntry } from '../db/log';
 import { MEALS, parseComponents, type LogEntry, type Meal } from '../db/types';
 import { useApp } from '../state/store';
@@ -21,6 +22,8 @@ interface Rect {
 export function FoodLog() {
   const { selectedDate, version, bump, profile } = useApp();
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [dragging, setDragging] = useState<LogEntry | null>(null);
   const [hover, setHover] = useState<Meal | null>(null);
@@ -34,7 +37,14 @@ export function FoodLog() {
 
   useFocusEffect(
     useCallback(() => {
-      entriesForDate(selectedDate).then(setEntries);
+      let alive = true;
+      setLoading(true);
+      setLoadError(false);
+      setEntries([]);
+      entriesForDate(selectedDate).then(rows => { if (alive) setEntries(rows); })
+        .catch(() => { if (alive) setLoadError(true); })
+        .finally(() => { if (alive) setLoading(false); });
+      return () => { alive = false; };
     }, [selectedDate, version]),
   );
 
@@ -111,15 +121,21 @@ export function FoodLog() {
           showsVerticalScrollIndicator={false}
         >
           <DateHeader title="יומן אכילה" />
-          <Row style={{ justifyContent: 'space-between', marginBottom: spacing.md }}>
-            <Text style={font.small}>
-              {Math.round(total)} / {profile?.target_kcal ?? 0} קק״ל
-            </Text>
-            <Text style={font.small}>
-              ח {Math.round(entries.reduce((s, e) => s + e.protein, 0))} · פ{' '}
-              {Math.round(entries.reduce((s, e) => s + e.carbs, 0))} · ש {Math.round(entries.reduce((s, e) => s + e.fat, 0))}
-            </Text>
-          </Row>
+          <Card>
+            {loading || loadError ? <Text style={font.small}>{loadError ? 'לא הצלחנו לטעון את היומן. חזרו למסך כדי לנסות שוב.' : 'טוענים את היומן…'}</Text> : <>
+            <Row style={{ justifyContent: 'space-between', marginBottom: 16 }}>
+              <View><Text style={font.small}>קלוריות שנרשמו</Text><Text style={font.h1}>{Math.round(total)}<Text style={font.small}> / {profile?.target_kcal ?? '—'}</Text></Text></View>
+              <View><Text style={font.small}>{total > (profile?.target_kcal ?? 0) ? 'מעל היעד' : 'נותרו ליעד'}</Text><Text style={font.h2}>{profile ? Math.abs(Math.round(profile.target_kcal - total)) : '—'}</Text></View>
+            </Row>
+            <MacroBar label="חלבון" value={entries.reduce((s, e) => s + e.protein, 0)} max={profile?.target_protein ?? 0} color={colors.protein} />
+            <MacroBar label="פחמימות" value={entries.reduce((s, e) => s + e.carbs, 0)} max={profile?.target_carbs ?? 0} color={colors.carbs} />
+            <MacroBar label="שומן" value={entries.reduce((s, e) => s + e.fat, 0)} max={profile?.target_fat ?? 0} color={colors.fat} />
+            </>}
+            <Row style={{ gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+              <Button title="הוספת אוכל" style={{ flexGrow: 1 }} onPress={() => router.push({ pathname: '/food/search', params: { date: selectedDate, meal: 'snack' } })} />
+              <Button title="צילום ארוחה" variant="secondary" style={{ flexGrow: 1 }} onPress={() => router.push({ pathname: '/food/photo', params: { date: selectedDate, meal: 'snack' } })} />
+            </Row>
+          </Card>
 
           {MEALS.map((meal) => {
             const items = entries.filter((e) => e.meal === meal);
@@ -149,13 +165,13 @@ export function FoodLog() {
                     <Text style={font.tiny}>{Math.round(kcal)} קק״ל</Text>
                   </View>
                   <Row style={{ gap: spacing.md }}>
-                    <Pressable hitSlop={8} onPress={() => router.push({ pathname: '/food/scan', params })}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`סריקת ברקוד ל${MEAL_LABEL[meal]}`} style={{ minWidth: 36, minHeight: 44, alignItems: 'center', justifyContent: 'center' }} onPress={() => router.push({ pathname: '/food/scan', params })}>
                       <Ionicons name="barcode-outline" size={22} color={colors.text} />
                     </Pressable>
-                    <Pressable hitSlop={8} onPress={() => router.push({ pathname: '/food/photo', params })}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`צילום ל${MEAL_LABEL[meal]}`} style={{ minWidth: 36, minHeight: 44, alignItems: 'center', justifyContent: 'center' }} onPress={() => router.push({ pathname: '/food/photo', params })}>
                       <Ionicons name="camera-outline" size={22} color={colors.text} />
                     </Pressable>
-                    <Pressable hitSlop={8} onPress={() => router.push({ pathname: '/food/search', params })}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`הוספה ל${MEAL_LABEL[meal]}`} style={{ minWidth: 36, minHeight: 44, alignItems: 'center', justifyContent: 'center' }} onPress={() => router.push({ pathname: '/food/search', params })}>
                       <Ionicons name="add-circle" size={26} color={colors.primary} />
                     </Pressable>
                   </Row>
@@ -174,7 +190,7 @@ export function FoodLog() {
                 ))}
                 {items.length === 0 ? (
                   <Text style={[font.tiny, { paddingHorizontal: spacing.md, paddingBottom: spacing.md }]}>
-                    {isTarget ? 'שחררו כאן' : 'עוד לא נרשם כלום'}
+                    {isTarget ? 'שחררו כאן' : loading ? 'טוענים…' : loadError ? 'הנתונים לא זמינים כרגע' : 'עוד לא נרשם כלום'}
                   </Text>
                 ) : null}
               </View>

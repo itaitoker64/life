@@ -63,7 +63,7 @@ export function MacroBar({
   const left = Math.round(max - value);
   return (
     <View style={{ marginBottom: 10 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
         <RNText style={[font.small, { fontWeight: '700', color: colors.text }]}>{label}</RNText>
         <RNText style={font.small}>
           <RNText style={{ color: colors.text, fontWeight: '700' }}>{Math.round(value)}</RNText> / {Math.round(max)} {unit}

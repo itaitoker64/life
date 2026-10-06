@@ -1,8 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 import type { DailyTotal } from '../db/log';
-import { today, weekdayNarrow, type ISODate } from '../lib/dates';
-import { colors, font, radius, spacing } from '../theme';
+import { formatDateLabel, formatLongDate, today, weekdayNarrow, type ISODate } from '../lib/dates';
+import { colors, font, radius } from '../theme';
 
 export type NutritionMode = 'consumed' | 'remaining';
 
@@ -15,7 +14,6 @@ interface RowSpec {
 }
 
 const BAR_H = 52;
-const BAR_W = 30;
 
 export function WeeklyNutrition({
   days,
@@ -42,7 +40,7 @@ export function WeeklyNutrition({
   const sel = totals.get(selected);
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+    <View>
       <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between' }}>
         {days.map((d) => {
           const isSel = d === selected;
@@ -52,10 +50,15 @@ export function WeeklyNutrition({
           return (
             <Pressable
               key={d}
+              accessibilityRole="button"
+              accessibilityLabel={formatLongDate(d)}
+              accessibilityState={{ selected: isSel }}
               onPress={() => onSelect(d)}
               style={{
+                flex: 1,
+                minWidth: 0,
                 alignItems: 'center',
-                paddingHorizontal: 4,
+                paddingHorizontal: 3,
                 paddingTop: 6,
                 paddingBottom: 4,
                 borderRadius: 12,
@@ -72,7 +75,7 @@ export function WeeklyNutrition({
                   <View
                     key={r.key}
                     style={{
-                      width: BAR_W,
+                      width: '100%',
                       height: BAR_H,
                       backgroundColor: colors.track,
                       borderRadius: 4,
@@ -86,7 +89,7 @@ export function WeeklyNutrition({
                       <View
                         style={{
                           width: 10,
-                          height: Math.max(3, fill * (BAR_H - 8)),
+                          height: Math.max(0, fill * (BAR_H - 8)),
                           backgroundColor: r.color,
                           borderRadius: 2,
                           marginVertical: 4,
@@ -118,25 +121,18 @@ export function WeeklyNutrition({
         })}
       </View>
 
-      <View style={{ width: 74, paddingStart: spacing.sm, paddingTop: 4 }}>
-        {rows.map((r, i) => {
+      <Text style={[font.small, { marginTop: 16, marginBottom: 8 }]}>{formatDateLabel(selected)} · {mode === 'consumed' ? 'נרשם ביומן' : 'נותר ליעד'}</Text>
+      {!sel || selected > t ? <Text style={[font.tiny, { marginBottom: 8 }]}>אין רישומי תזונה ליום שנבחר.</Text> : null}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {rows.map(r => {
           const v = sel?.[r.key] ?? 0;
           const shown = mode === 'consumed' ? v : Math.max(0, r.target - v);
-          return (
-            <View key={r.key} style={{ height: BAR_H, marginBottom: i < rows.length - 1 ? 10 : 0, justifyContent: 'center' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }} numberOfLines={1}>
-                  {Math.round(shown)}
-                </Text>
-                {r.icon ? (
-                  <Ionicons name="flame" size={11} color={colors.muted} style={{ marginStart: 2 }} />
-                ) : (
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: colors.muted, marginStart: 3 }}>{r.letter}</Text>
-                )}
-              </View>
-              <Text style={font.tiny}>מתוך {Math.round(r.target)}</Text>
-            </View>
-          );
+          const label = { kcal: 'קלוריות', protein: 'חלבון', fat: 'שומן', carbs: 'פחמימות' }[r.key];
+          return <View key={r.key} style={{ width: '47%', flexGrow: 1, backgroundColor: colors.elev2, borderRadius: 12, padding: 10 }}>
+            <Text style={[font.small, { color: r.color }]}>{label}</Text>
+            <Text style={font.h3}>{sel && selected <= t ? Math.round(shown) : '—'} <Text style={font.tiny}>{r.key === 'kcal' ? 'קק״ל' : 'גרם'}</Text></Text>
+            <Text style={font.tiny}>יעד {Math.round(r.target)}</Text>
+          </View>;
         })}
       </View>
     </View>
@@ -151,10 +147,12 @@ export function ModeToggle({ value, onChange }: { value: NutritionMode; onChange
         return (
           <Pressable
             key={m}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
             onPress={() => onChange(m)}
             style={{ paddingVertical: 10, paddingHorizontal: 22, borderRadius: radius.pill, backgroundColor: active ? colors.primary : 'transparent' }}
           >
-            <Text style={{ color: active ? '#fff' : colors.text, fontWeight: '600', fontSize: 14 }}>
+            <Text style={{ color: active ? colors.bg : colors.text, fontWeight: '600', fontSize: 14 }}>
               {m === 'consumed' ? 'נאכל' : 'נשאר'}
             </Text>
           </Pressable>
