@@ -72,28 +72,28 @@ export function IngredientList({
                 {it.name}
               </Text>
               <Text style={font.tiny}>
-                {Math.round(s.kcal)} kcal · P {Math.round(s.protein)} · C {Math.round(s.carbs)} · F {Math.round(s.fat)}
+                {Math.round(s.kcal)} קק״ל · ח {Math.round(s.protein)} · פ {Math.round(s.carbs)} · ש {Math.round(s.fat)}
               </Text>
             </View>
             <View
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                backgroundColor: colors.track,
+                backgroundColor: colors.elev2,
                 borderRadius: radius.sm,
                 paddingHorizontal: 8,
                 width: 72,
               }}
             >
               <TextInput
-                style={{ flex: 1, paddingVertical: 6, fontSize: 14, color: colors.text, textAlign: 'right' }}
+                style={{ flex: 1, paddingVertical: 6, fontSize: 14, color: colors.text, textAlign: 'center' }}
                 keyboardType="decimal-pad"
                 value={it.gramsText}
                 editable={!it.removed}
                 onChangeText={(t) => update(idx, { gramsText: t })}
                 selectTextOnFocus
               />
-              <Text style={[font.tiny, { marginLeft: 2 }]}>g</Text>
+              <Text style={[font.tiny, { marginStart: 2 }]}>ג׳</Text>
             </View>
             <Pressable
               hitSlop={8}

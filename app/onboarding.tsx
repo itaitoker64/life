@@ -15,6 +15,7 @@ import {
 import { displayToKg, kgToDisplay, weightLabel, type Units } from '../src/lib/units';
 import { colors, font, spacing } from '../src/theme';
 import { useApp } from '../src/state/store';
+import { SPEED_HE } from '../src/screens/Strategy';
 
 export default function Onboarding() {
   const { patchProfile, init } = useApp();
@@ -44,7 +45,7 @@ export default function Onboarding() {
     const y = parseNum(birthYear);
     const gw = parseNum(goalWeight);
     if (!w || !h || !y) {
-      setError('Please fill in weight, height and birth year.');
+      setError('נא למלא משקל, גובה ושנת לידה.');
       return;
     }
     setBusy(true);
@@ -77,50 +78,50 @@ export default function Onboarding() {
 
   return (
     <Screen>
-      <Title sub="A few details to estimate your starting expenditure. It adapts automatically as you log food and weigh in.">
-        Welcome
+      <Title sub="כמה פרטים כדי להעריך את ההוצאה הקלורית ההתחלתית. היא מתעדכנת אוטומטית כשרושמים אוכל ומשקל.">
+        ברוכים הבאים ל-Life
       </Title>
 
       <Card>
-        <CardHeader title="About you" />
+        <CardHeader title="עליך" />
         <Segmented<Units>
           options={[
-            { value: 'metric', label: 'kg / cm' },
-            { value: 'imperial', label: 'lb / in' },
+            { value: 'metric', label: 'ק״ג / ס״מ' },
+            { value: 'imperial', label: 'lb / אינץ׳' },
           ]}
           value={units}
           onChange={setUnits}
         />
         <Segmented<Sex>
           options={[
-            { value: 'male', label: 'Male' },
-            { value: 'female', label: 'Female' },
+            { value: 'male', label: 'גבר' },
+            { value: 'female', label: 'אישה' },
           ]}
           value={sex}
           onChange={setSex}
         />
         <Row style={{ gap: spacing.sm }}>
           <View style={{ flex: 1 }}>
-            <Field label="Birth year" keyboardType="number-pad" value={birthYear} onChangeText={setBirthYear} />
+            <Field label="שנת לידה" keyboardType="number-pad" value={birthYear} onChangeText={setBirthYear} />
           </View>
           <View style={{ flex: 1 }}>
             <Field
-              label="Height"
+              label="גובה"
               keyboardType="decimal-pad"
               value={height}
               onChangeText={setHeight}
-              suffix={units === 'metric' ? 'cm' : 'in'}
+              suffix={units === 'metric' ? 'ס״מ' : 'אינץ׳'}
             />
           </View>
         </Row>
-        <Field label="Current weight" keyboardType="decimal-pad" value={weight} onChangeText={setWeight} placeholder="e.g. 80" suffix={wl} />
-        <Text style={[font.small, { marginBottom: 6, fontWeight: '600' }]}>Daily activity (outside of exercise)</Text>
+        <Field label="משקל נוכחי" keyboardType="decimal-pad" value={weight} onChangeText={setWeight} placeholder="למשל 80" suffix={wl} />
+        <Text style={[font.small, { marginBottom: 6, fontWeight: '600' }]}>פעילות יומית (בלי אימונים)</Text>
         <Segmented<ActivityLevel>
           options={[
-            { value: 'sedentary', label: 'Sedentary' },
-            { value: 'light', label: 'Light' },
-            { value: 'moderate', label: 'Moderate' },
-            { value: 'active', label: 'Active' },
+            { value: 'sedentary', label: 'יושבני' },
+            { value: 'light', label: 'קלה' },
+            { value: 'moderate', label: 'בינונית' },
+            { value: 'active', label: 'פעיל' },
           ]}
           value={activity}
           onChange={setActivity}
@@ -128,37 +129,37 @@ export default function Onboarding() {
       </Card>
 
       <Card>
-        <CardHeader title="Goal" />
+        <CardHeader title="מטרה" />
         <Segmented<GoalType>
           options={[
-            { value: 'lose', label: 'Lose fat' },
-            { value: 'maintain', label: 'Maintain' },
-            { value: 'gain', label: 'Gain muscle' },
+            { value: 'lose', label: 'ירידה בשומן' },
+            { value: 'maintain', label: 'שמירה' },
+            { value: 'gain', label: 'עלייה במסה' },
           ]}
           value={goal}
           onChange={changeGoal}
         />
         {goal !== 'maintain' ? (
           <>
-            <Text style={[font.small, { marginBottom: 8, fontWeight: '600' }]}>Rate ({'%'} of bodyweight per week)</Text>
+            <Text style={[font.small, { marginBottom: 8, fontWeight: '600' }]}>קצב (% ממשקל הגוף לשבוע)</Text>
             <Row style={{ gap: spacing.sm, flexWrap: 'wrap', marginBottom: spacing.md }}>
               {RATE_PRESETS[goal].map((p) => (
-                <Chip key={p.label} label={`${p.label} · ${p.pct}%`} active={p.pct === pct} onPress={() => setPct(p.pct)} />
+                <Chip key={p.label} label={`${SPEED_HE[p.label] ?? p.label} · ${p.pct}%`} active={p.pct === pct} onPress={() => setPct(p.pct)} />
               ))}
             </Row>
             {weekly != null ? (
               <Text style={[font.small, { marginBottom: spacing.md }]}>
                 ≈ {weekly >= 0 ? '+' : '−'}
-                {Math.abs(kgToDisplay(weekly, units)).toFixed(2)} {wl} per week · {Math.abs(kgToDisplay(weekly * 4.33, units)).toFixed(1)} {wl} per month
+                {Math.abs(kgToDisplay(weekly, units)).toFixed(2)} {wl} לשבוע · {Math.abs(kgToDisplay(weekly * 4.33, units)).toFixed(1)} {wl} לחודש
               </Text>
             ) : null}
-            <Field label="Goal weight (optional)" keyboardType="decimal-pad" value={goalWeight} onChangeText={setGoalWeight} suffix={wl} />
+            <Field label="משקל יעד (לא חובה)" keyboardType="decimal-pad" value={goalWeight} onChangeText={setGoalWeight} suffix={wl} />
           </>
         ) : null}
       </Card>
 
       {error ? <Text style={[font.small, { color: colors.danger, marginBottom: spacing.sm }]}>{error}</Text> : null}
-      <Button title="Start" onPress={finish} loading={busy} />
+      <Button title="מתחילים" onPress={finish} loading={busy} />
     </Screen>
   );
 }

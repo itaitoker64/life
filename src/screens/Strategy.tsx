@@ -2,12 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { BarChart } from '../../src/components/charts';
-import { MacroWeekGrid } from '../../src/components/MacroWeekGrid';
-import { RulerPicker } from '../../src/components/RulerPicker';
-import { Button, Card, CardHeader, Chip, Field, Row, Screen, Segmented, Stat, parseNum } from '../../src/components/ui';
-import { expenditureHistory } from '../../src/db/profile';
+import { BarChart } from '../components/charts';
+import { MacroWeekGrid } from '../components/MacroWeekGrid';
+import { RulerPicker } from '../components/RulerPicker';
+import { Button, Card, CardHeader, Chip, Field, Row, Screen, Segmented, Stat, parseNum } from '../components/ui';
+import { expenditureHistory } from '../db/profile';
 import {
   applyTargets,
   checkinDaysRemaining,
@@ -15,8 +14,8 @@ import {
   currentTrendWeight,
   targetInput,
   updateExpenditureIfNeeded,
-} from '../../src/lib/coach';
-import { formatShortDate, today } from '../../src/lib/dates';
+} from '../lib/coach';
+import { formatShortDate, today } from '../lib/dates';
 import {
   RATE_PRESETS,
   RATE_RANGE,
@@ -27,10 +26,10 @@ import {
   weeksToGoal,
   type GoalType,
   type ProteinMode,
-} from '../../src/lib/tdee';
-import { displayToKg, fmtWeight, kgToDisplay, weightLabel } from '../../src/lib/units';
-import { useApp } from '../../src/state/store';
-import { colors, font, radius, spacing } from '../../src/theme';
+} from '../lib/tdee';
+import { displayToKg, fmtWeight, kgToDisplay, weightLabel } from '../lib/units';
+import { useApp } from '../state/store';
+import { chevronForward, colors, font, radius, spacing } from '../theme';
 
 const SPEED_COLOR = {
   Slow: colors.success,
@@ -39,7 +38,9 @@ const SPEED_COLOR = {
   Aggressive: colors.danger,
 } as const;
 
-export default function Strategy() {
+export const SPEED_HE: Record<string, string> = { Slow: 'איטי', Moderate: 'מתון', Fast: 'מהיר', Aggressive: 'אגרסיבי' };
+
+export function Strategy() {
   const { profile, patchProfile, refreshProfile, version } = useApp();
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -115,12 +116,9 @@ export default function Strategy() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'left', 'right']}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-        <View style={{ backgroundColor: colors.card, paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.md }}>
-            <Text style={[font.screenTitle, { fontSize: 22, color: colors.text }]}>Strategy</Text>
-          </View>
+        <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.md }}>
 
           <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
             <Pressable
@@ -131,7 +129,7 @@ export default function Strategy() {
                 height: 200,
                 borderRadius: 100,
                 borderWidth: 8,
-                borderColor: due ? colors.track : 'transparent',
+                borderColor: due ? colors.primarySoft : 'transparent',
                 alignItems: 'center',
                 justifyContent: 'center',
                 opacity: pressed ? 0.85 : 1,
@@ -148,10 +146,10 @@ export default function Strategy() {
                 }}
               >
                 <Text style={{ color: due ? '#fff' : colors.muted, fontSize: 22, fontWeight: '800', letterSpacing: 1 }}>
-                  CHECK IN
+                  צ׳ק-אין
                 </Text>
                 <Text style={{ color: due ? '#fff' : colors.muted, fontSize: 14, marginTop: 4, opacity: 0.75 }}>
-                  {due ? "it's time" : `in ${days} day${days === 1 ? '' : 's'}`}
+                  {due ? 'הגיע הזמן' : days === 1 ? 'בעוד יום' : `בעוד ${days} ימים`}
                 </Text>
               </View>
             </Pressable>
@@ -159,11 +157,11 @@ export default function Strategy() {
         </View>
 
         <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}>
-          <Text style={[font.h2, { marginBottom: spacing.md }]}>In Progress</Text>
+          <Text style={[font.h2, { marginBottom: spacing.md }]}>התוכנית הנוכחית</Text>
           <Card>
-            <Text style={font.h3}>Coached Program</Text>
+            <Text style={font.h3}>תוכנית מאומנת</Text>
             <Text style={[font.small, { marginBottom: spacing.md }]}>
-              {profile.program_since ? `${formatShortDate(profile.program_since)} – Now` : 'Started today'}
+              {profile.program_since ? `${formatShortDate(profile.program_since)} – היום` : 'התחילה היום'}
             </Text>
             <MacroWeekGrid
               calories={profile.target_kcal}
@@ -174,29 +172,29 @@ export default function Strategy() {
             />
             <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing.md }} />
             <Row style={{ justifyContent: 'space-between' }}>
-              <Text style={font.small}>Expenditure</Text>
-              <Text style={[font.small, { color: colors.text, fontWeight: '700' }]}>{profile.tdee} kcal / day</Text>
+              <Text style={font.small}>הוצאה קלורית</Text>
+              <Text style={[font.small, { color: colors.text, fontWeight: '700' }]}>{profile.tdee} קק״ל ליום</Text>
             </Row>
             <Row style={{ justifyContent: 'space-between', marginTop: 4 }}>
-              <Text style={font.small}>Daily {goal === 'lose' ? 'deficit' : goal === 'gain' ? 'surplus' : 'balance'}</Text>
+              <Text style={font.small}>{goal === 'lose' ? 'גירעון' : goal === 'gain' ? 'עודף' : 'מאזן'} יומי</Text>
               <Text style={[font.small, { color: colors.text, fontWeight: '700' }]}>
                 {profile.target_kcal - profile.tdee >= 0 ? '+' : ''}
-                {profile.target_kcal - profile.tdee} kcal
+                {profile.target_kcal - profile.tdee} קק״ל
               </Text>
             </Row>
             <Row style={{ justifyContent: 'space-between', marginTop: 4 }}>
-              <Text style={font.small}>Check-ins completed</Text>
+              <Text style={font.small}>צ׳ק-אינים שהושלמו</Text>
               <Text style={[font.small, { color: colors.text, fontWeight: '700' }]}>{profile.checkin_count}</Text>
             </Row>
           </Card>
 
-          <Text style={[font.h2, { marginTop: spacing.lg, marginBottom: spacing.md }]}>Goal</Text>
+          <Text style={[font.h2, { marginTop: spacing.lg, marginBottom: spacing.md }]}>מטרה</Text>
           <Card>
             <Segmented<GoalType>
               options={[
-                { value: 'lose', label: 'Lose fat' },
-                { value: 'maintain', label: 'Maintain' },
-                { value: 'gain', label: 'Gain muscle' },
+                { value: 'lose', label: 'ירידה בשומן' },
+                { value: 'maintain', label: 'שמירה' },
+                { value: 'gain', label: 'עלייה במסה' },
               ]}
               value={goal}
               onChange={changeGoal}
@@ -204,10 +202,10 @@ export default function Strategy() {
             {goal !== 'maintain' ? (
               <>
                 <Row style={{ justifyContent: 'space-between', marginBottom: spacing.sm }}>
-                  <Text style={font.label}>Rate of {goal === 'lose' ? 'loss' : 'gain'}</Text>
+                  <Text style={font.label}>קצב {goal === 'lose' ? 'ירידה' : 'עלייה'}</Text>
                   {speed ? (
                     <View style={{ backgroundColor: SPEED_COLOR[speed], paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill }}>
-                      <Text style={{ color: '#fff', fontWeight: '700', fontSize: 11 }}>{speed}</Text>
+                      <Text style={{ color: '#fff', fontWeight: '700', fontSize: 11 }}>{SPEED_HE[speed]}</Text>
                     </View>
                   ) : null}
                 </Row>
@@ -217,7 +215,7 @@ export default function Strategy() {
                   step={0.05}
                   decimals={2}
                   majorEvery={5}
-                  unit="% / week"
+                  unit="% לשבוע"
                   value={pct}
                   color={speed ? SPEED_COLOR[speed] : colors.info}
                   onChange={(v) => scheduleApply({ rate_pct_week: v })}
@@ -226,7 +224,7 @@ export default function Strategy() {
                   {RATE_PRESETS[goal].map((p) => (
                     <Chip
                       key={p.label}
-                      label={`${p.label} · ${p.pct}%`}
+                      label={`${SPEED_HE[p.label] ?? p.label} · ${p.pct}%`}
                       active={Math.abs(p.pct - pct) < 0.001}
                       color={SPEED_COLOR[p.label as keyof typeof SPEED_COLOR]}
                       onPress={() => scheduleApply({ rate_pct_week: p.pct })}
@@ -235,96 +233,96 @@ export default function Strategy() {
                 </Row>
                 <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing.md }} />
                 <Row style={{ gap: spacing.md }}>
-                  <Stat label="Per week" value={`${weekly >= 0 ? '+' : '−'}${Math.abs(kgToDisplay(weekly, units)).toFixed(2)}`} sub={wl} />
-                  <Stat label="Per month" value={`${weekly >= 0 ? '+' : '−'}${Math.abs(kgToDisplay(weekly * 4.33, units)).toFixed(1)}`} sub={wl} />
-                  <Stat label="Calories" value={`${preview.calories}`} sub="kcal / day" />
+                  <Stat label="לשבוע" value={`${weekly >= 0 ? '+' : '−'}${Math.abs(kgToDisplay(weekly, units)).toFixed(2)}`} sub={wl} />
+                  <Stat label="לחודש" value={`${weekly >= 0 ? '+' : '−'}${Math.abs(kgToDisplay(weekly * 4.33, units)).toFixed(1)}`} sub={wl} />
+                  <Stat label="קלוריות" value={`${preview.calories}`} sub="קק״ל ליום" />
                 </Row>
                 <Text style={[font.tiny, { marginTop: spacing.sm }]}>
                   {speed === 'Slow'
-                    ? 'Easiest to sustain, best for keeping muscle. Progress is gradual.'
+                    ? 'הכי קל להתמיד בו, והכי טוב לשמירה על שריר. ההתקדמות הדרגתית.'
                     : speed === 'Moderate'
-                      ? 'The sweet spot for most people: steady progress without much hunger.'
+                      ? 'נקודת האיזון לרוב האנשים: התקדמות יציבה בלי הרבה רעב.'
                       : speed === 'Fast'
-                        ? 'Noticeably harder. Expect more hunger and some strength loss.'
-                        : 'Very demanding. Only for short pushes; keep protein high.'}
+                        ? 'קשה יותר באופן מורגש. צפו ליותר רעב ולירידה מסוימת בכוח.'
+                        : 'תובעני מאוד. רק לתקופות קצרות, עם הרבה חלבון.'}
                 </Text>
               </>
             ) : (
-              <Text style={font.small}>Your calories will track your expenditure so your weight stays stable.</Text>
+              <Text style={font.small}>הקלוריות יעקבו אחרי ההוצאה שלך כדי שהמשקל יישאר יציב.</Text>
             )}
           </Card>
 
           {goal !== 'maintain' ? (
             <Card>
               <CardHeader
-                title="Goal weight"
-                subtitle={trendKg != null ? `Trend now ${fmtWeight(trendKg, units)}` : undefined}
+                title="משקל יעד"
+                subtitle={trendKg != null ? `מגמה עכשיו ${fmtWeight(trendKg, units)}` : undefined}
                 color={colors.weight}
               />
               <Field
                 keyboardType="decimal-pad"
                 value={goalWeight}
                 onChangeText={setGoalWeight}
-                placeholder={`Target ${wl}`}
+                placeholder={`יעד ב${wl}`}
                 suffix={wl}
                 onBlur={saveMacros}
               />
               {profile.goal_weight_kg != null && weeks != null && weeks < 520 ? (
                 <Text style={font.small}>
-                  {Math.abs(kgToDisplay(profile.goal_weight_kg - weightKg, units)).toFixed(1)} {wl} to go · about{' '}
-                  <Text style={{ color: colors.text, fontWeight: '700' }}>{Math.ceil(weeks)} weeks</Text>
+                  נשארו {Math.abs(kgToDisplay(profile.goal_weight_kg - weightKg, units)).toFixed(1)} {wl} · בערך{' '}
+                  <Text style={{ color: colors.text, fontWeight: '700' }}>{Math.ceil(weeks)} שבועות</Text>
                 </Text>
               ) : null}
             </Card>
           ) : null}
 
           <Card>
-            <CardHeader title="Protein" subtitle={`${preview.protein} g / day`} color={colors.protein} />
+            <CardHeader title="חלבון" subtitle={`${preview.protein} ג׳ ליום`} color={colors.protein} />
             <Segmented<ProteinMode>
               options={[
-                { value: 'auto', label: 'Recommended' },
-                { value: 'custom', label: 'Custom' },
+                { value: 'auto', label: 'מומלץ' },
+                { value: 'custom', label: 'מותאם אישית' },
               ]}
               value={profile.protein_mode}
               onChange={(protein_mode) => scheduleApply({ protein_mode })}
             />
             {profile.protein_mode === 'auto' ? (
               <Text style={[font.small, { lineHeight: 19 }]}>
-                {preview.proteinGPerKg} g/kg × {preview.referenceWeightKg.toFixed(1)} kg = {preview.protein} g.{' '}
+                {preview.proteinGPerKg} ג׳/ק״ג × {preview.referenceWeightKg.toFixed(1)} ק״ג = {preview.protein} ג׳.{' '}
                 {goal === 'lose'
-                  ? 'Higher protein (top of the 1.6–2.2 g/kg evidence range) protects muscle in a deficit.'
+                  ? 'חלבון גבוה (הקצה העליון של טווח 1.6–2.2 ג׳/ק״ג) שומר על השריר בגירעון.'
                   : goal === 'gain'
-                    ? 'Around 1.8 g/kg covers muscle growth; more has no added benefit in the research.'
-                    : 'About 1.6 g/kg maintains muscle at maintenance calories.'}
+                    ? 'כ-1.8 ג׳/ק״ג מספיק לבניית שריר; יותר מזה לא הראה תועלת נוספת במחקרים.'
+                    : 'כ-1.6 ג׳/ק״ג שומר על השריר בקלוריות שמירה.'}
                 {userBmi > 27
-                  ? ` Above a BMI of 27 only a quarter of the extra weight counts, so protein tracks lean mass, not body fat.`
+                  ? ' מעל BMI 27 רק רבע מהמשקל העודף נספר, כך שהחלבון מחושב לפי מסה רזה ולא לפי שומן.'
                   : ''}
               </Text>
             ) : (
               <>
-                <Field label="Protein" keyboardType="decimal-pad" value={protein} onChangeText={setProtein} suffix="g / kg bodyweight" />
-                <Text style={font.tiny}>Evidence range: 1.6–2.2 g/kg. Values outside 1.2–3.0 are clamped.</Text>
+                <Field label="חלבון" keyboardType="decimal-pad" value={protein} onChangeText={setProtein} suffix="ג׳ לק״ג משקל גוף" />
+                <Text style={font.tiny}>טווח מבוסס מחקר: 1.6–2.2 ג׳/ק״ג. ערכים מחוץ ל-1.2–3.0 מוגבלים.</Text>
               </>
             )}
           </Card>
 
           <Card>
-            <CardHeader title="Fat" subtitle={`${preview.fat} g / day · carbs fill the rest (${preview.carbs} g)`} color={colors.fat} />
-            <Field label="Fat" keyboardType="number-pad" value={fat} onChangeText={setFat} suffix="% of calories" />
+            <CardHeader title="שומן" subtitle={`${preview.fat} ג׳ ליום · הפחמימות משלימות (${preview.carbs} ג׳)`} color={colors.fat} />
+            <Field label="שומן" keyboardType="number-pad" value={fat} onChangeText={setFat} suffix="% מהקלוריות" />
             <Text style={[font.tiny, { marginBottom: spacing.md }]}>
-              Kept at or above 0.6 g/kg bodyweight for hormonal health, and at most 40 %.
+              לפחות 0.6 ג׳ לק״ג משקל גוף לבריאות הורמונלית, ולכל היותר 40%.
             </Text>
-            <Button title="Save & recalculate" onPress={saveMacros} loading={busy} variant="secondary" />
+            <Button title="שמירה וחישוב מחדש" onPress={saveMacros} loading={busy} variant="secondary" />
           </Card>
 
           <Card>
             <CardHeader
-              title="Expenditure history"
-              subtitle="Recalculated daily from weight trend and logged intake"
+              title="היסטוריית הוצאה קלורית"
+              subtitle="מחושבת מחדש כל יום ממגמת המשקל ומהאכילה הרשומה"
               color={colors.expenditure}
               right={
                 <Pressable onPress={() => router.push('/expenditure')} hitSlop={8}>
-                  <Ionicons name="chevron-forward" size={20} color={colors.faint} />
+                  <Ionicons name={chevronForward} size={20} color={colors.faint} />
                 </Pressable>
               }
             />
@@ -336,11 +334,11 @@ export default function Strategy() {
                 labels={history.map((h, i) => (i % Math.max(1, Math.ceil(history.length / 4)) === 0 ? formatShortDate(h.date) : ''))}
               />
             ) : (
-              <Text style={font.small}>Expenditure is recalculated every day you open the app.</Text>
+              <Text style={font.small}>ההוצאה מחושבת מחדש בכל יום שבו פותחים את האפליקציה.</Text>
             )}
           </Card>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

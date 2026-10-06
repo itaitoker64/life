@@ -12,13 +12,12 @@ import {
 } from '../../src/components/IngredientList';
 import { Button, Card, Field, Row, Screen, Segmented, Stat } from '../../src/components/ui';
 import { addEntry } from '../../src/db/log';
-import { MEALS, type Meal } from '../../src/db/types';
+import { MEAL_OPTS, MEAL_SHORT, type Meal } from '../../src/db/types';
 import { MissingApiKeyError, analyzeFoodPhoto, describeAiError, hasApiKey, type ImageAsset } from '../../src/lib/ai';
 import { today } from '../../src/lib/dates';
 import { useApp } from '../../src/state/store';
 import { colors, font, spacing } from '../../src/theme';
 
-const MEAL_OPTS = MEALS.map((m) => ({ value: m, label: m[0].toUpperCase() + m.slice(1) }));
 
 interface EditableDish {
   name: string;
@@ -128,24 +127,24 @@ export default function Photo() {
           <Image source={{ uri }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 12, marginBottom: spacing.md }} resizeMode="cover" />
         ) : (
           <Text style={[font.small, { marginBottom: spacing.md }]}>
-            Take a photo of your meal. The AI breaks each dish into its ingredients, including hidden ones like oil, butter
-            and cream, so you can remove or adjust anything that is not really there.
+            צלמו את הארוחה. ה-AI מפרק כל מנה לרכיבים, כולל רכיבים נסתרים כמו שמן, חמאה ושמנת, כך שאפשר להסיר או
+            לתקן כל מה שלא באמת שם.
           </Text>
         )}
         <Row style={{ gap: spacing.sm }}>
-          <Button title="Take photo" style={{ flex: 1 }} variant={uri ? 'secondary' : 'primary'} onPress={() => pick(true)} />
-          <Button title="Choose from library" style={{ flex: 1 }} variant="secondary" onPress={() => pick(false)} />
+          <Button title="צילום" style={{ flex: 1 }} variant={uri ? 'secondary' : 'primary'} onPress={() => pick(true)} />
+          <Button title="מהגלריה" style={{ flex: 1 }} variant="secondary" onPress={() => pick(false)} />
         </Row>
         {uri && !dishes ? (
           <>
             <Field
-              label="Optional hint"
-              placeholder='e.g. "made with light cream, no butter"'
+              label="רמז (לא חובה)"
+              placeholder='למשל: "עם שמנת קלה, בלי חמאה"'
               value={hint}
               onChangeText={setHint}
               style={{ marginTop: spacing.md }}
             />
-            <Button title="Analyze" onPress={analyze} loading={busy} />
+            <Button title="ניתוח" onPress={analyze} loading={busy} />
           </>
         ) : null}
         {error ? <Text style={[font.small, { color: colors.danger, marginTop: spacing.sm }]}>{error}</Text> : null}
@@ -155,7 +154,7 @@ export default function Photo() {
         <>
           <Card>
             <Segmented<Meal> options={MEAL_OPTS} value={meal} onChange={setMeal} />
-            {dishes.length === 0 ? <Text style={font.small}>No food detected. Try another photo or add a hint.</Text> : null}
+            {dishes.length === 0 ? <Text style={font.small}>לא זוהה אוכל. נסו תמונה אחרת או הוסיפו רמז.</Text> : null}
             {notes ? <Text style={font.tiny}>{notes}</Text> : null}
           </Card>
 
@@ -164,17 +163,17 @@ export default function Photo() {
             return (
               <Card key={idx} style={{ opacity: d.include ? 1 : 0.45 }}>
                 <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.sm }}>
-                  <View style={{ flex: 1, paddingRight: spacing.sm }}>
+                  <View style={{ flex: 1, paddingEnd: spacing.sm }}>
                     <Text style={font.h3}>{d.name}</Text>
                     <Text style={font.tiny}>
-                      {Math.round(t.grams)} g · {d.confidence} confidence
+                      {Math.round(t.grams)} ג׳ · ודאות {d.confidence === 'high' ? 'גבוהה' : d.confidence === 'medium' ? 'בינונית' : 'נמוכה'}
                     </Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={[font.h3, { color: colors.calories }]}>{Math.round(t.kcal)} kcal</Text>
+                    <Text style={[font.h3, { color: colors.calories }]}>{Math.round(t.kcal)} קק״ל</Text>
                     <Pressable hitSlop={8} onPress={() => updateDish(idx, { include: !d.include })}>
                       <Text style={[font.small, { color: colors.info, fontWeight: '600', marginTop: 2 }]}>
-                        {d.include ? 'Skip dish' : 'Include'}
+                        {d.include ? 'דילוג על המנה' : 'להוסיף'}
                       </Text>
                     </Pressable>
                   </View>
@@ -188,13 +187,13 @@ export default function Photo() {
 
           <Card>
             <Row style={{ gap: spacing.md, marginBottom: spacing.md }}>
-              <Stat label="Calories" value={`${Math.round(totals.kcal)}`} color={colors.calories} />
-              <Stat label="Protein" value={`${Math.round(totals.protein)} g`} color={colors.protein} />
-              <Stat label="Carbs" value={`${Math.round(totals.carbs)} g`} color={colors.carbs} />
-              <Stat label="Fat" value={`${Math.round(totals.fat)} g`} color={colors.fat} />
+              <Stat label="קלוריות" value={`${Math.round(totals.kcal)}`} color={colors.calories} />
+              <Stat label="חלבון" value={`${Math.round(totals.protein)}`} sub="ג׳" color={colors.protein} />
+              <Stat label="פחמימה" value={`${Math.round(totals.carbs)}`} sub="ג׳" color={colors.carbs} />
+              <Stat label="שומן" value={`${Math.round(totals.fat)}`} sub="ג׳" color={colors.fat} />
             </Row>
-            <Button title={`Log to ${meal}`} onPress={logAll} loading={busy} disabled={totals.grams <= 0} />
-            <Button title="Re-analyze (new AI call)" variant="ghost" onPress={analyze} style={{ marginTop: spacing.sm }} />
+            <Button title={`רישום ל${MEAL_SHORT[meal]}`} onPress={logAll} loading={busy} disabled={totals.grams <= 0} />
+            <Button title="ניתוח מחדש" variant="ghost" onPress={analyze} style={{ marginTop: spacing.sm }} />
           </Card>
         </>
       ) : null}

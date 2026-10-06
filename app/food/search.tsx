@@ -29,7 +29,7 @@ export default function Search() {
     try {
       setOnline(await searchProducts(q));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Search failed');
+      setError(e instanceof Error ? e.message : 'החיפוש נכשל');
     } finally {
       setLoading(false);
     }
@@ -49,7 +49,7 @@ export default function Search() {
   return (
     <Screen scroll={false}>
       <Field
-        placeholder="Search foods"
+        placeholder="חיפוש מזון (עברית או אנגלית)"
         value={q}
         onChangeText={setQ}
         autoFocus
@@ -59,21 +59,21 @@ export default function Search() {
       />
       <Row style={{ gap: spacing.sm, marginBottom: spacing.md }}>
         <Button
-          title="Scan"
+          title="סריקה"
           variant="secondary"
           style={{ flex: 1 }}
           icon={<Ionicons name="barcode-outline" size={16} color={colors.primary} />}
           onPress={() => router.replace({ pathname: '/food/scan', params })}
         />
         <Button
-          title="Photo"
+          title="צילום"
           variant="secondary"
           style={{ flex: 1 }}
           icon={<Ionicons name="camera-outline" size={16} color={colors.primary} />}
           onPress={() => router.replace({ pathname: '/food/photo', params })}
         />
         <Button
-          title="Create"
+          title="חדש"
           variant="secondary"
           style={{ flex: 1 }}
           icon={<Ionicons name="create-outline" size={16} color={colors.primary} />}
@@ -90,16 +90,16 @@ export default function Search() {
                 name={f.name}
                 brand={f.brand ?? f.name_en}
                 kcal={f.kcal}
-                serving={f.serving_g ? `${f.serving_name ?? 'serving'} ${f.serving_g} g` : null}
+                serving={f.serving_g ? `${f.serving_name ?? 'מנה'} ${f.serving_g} ג׳` : null}
                 onPress={() => openFood(f.id)}
               />
             ))}
             {q.trim() ? (
               <View style={{ padding: spacing.md }}>
                 {online == null ? (
-                  <Button title="Search Open Food Facts" variant="ghost" onPress={searchOnline} loading={loading} />
+                  <Button title="חיפוש ב-Open Food Facts" variant="ghost" onPress={searchOnline} loading={loading} />
                 ) : online.length === 0 ? (
-                  <Text style={font.small}>No online results.</Text>
+                  <Text style={font.small}>אין תוצאות ברשת.</Text>
                 ) : null}
                 {error ? <Text style={[font.small, { color: colors.danger }]}>{error}</Text> : null}
               </View>
@@ -116,7 +116,7 @@ export default function Search() {
               />
             ))}
             {local.length === 0 && q.trim() ? (
-              <Text style={[font.small, { padding: spacing.md, paddingTop: 0 }]}>No local matches. Try Hebrew or English.</Text>
+              <Text style={[font.small, { padding: spacing.md, paddingTop: 0 }]}>אין התאמות במאגר. נסו בעברית או באנגלית.</Text>
             ) : null}
           </ScrollView>
         </Card>
@@ -147,11 +147,11 @@ function FoodRow({
         padding: spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
-        backgroundColor: pressed ? colors.bg : 'transparent',
+        backgroundColor: pressed ? colors.elev2 : 'transparent',
       })}
     >
       <Row style={{ justifyContent: 'space-between' }}>
-        <View style={{ flex: 1, paddingRight: spacing.sm }}>
+        <View style={{ flex: 1, paddingEnd: spacing.sm }}>
           <Text style={font.body} numberOfLines={1}>
             {name}
           </Text>
@@ -159,7 +159,7 @@ function FoodRow({
             {[brand, serving, online ? 'Open Food Facts' : null].filter(Boolean).join(' · ')}
           </Text>
         </View>
-        <Text style={font.small}>{Math.round(kcal)} kcal/100g</Text>
+        <Text style={font.small}>{Math.round(kcal)} קק״ל/100ג׳</Text>
       </Row>
     </Pressable>
   );

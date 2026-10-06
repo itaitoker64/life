@@ -27,11 +27,11 @@ export default function Scan() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     const code = r.data.trim();
     try {
-      setStatus('Checking your foods…');
+      setStatus('בודק במזונות שלך…');
       const local = await getFoodByBarcode(code);
       if (local) return open(local.id);
 
-      setStatus('Looking up Open Food Facts…');
+      setStatus('מחפש ב-Open Food Facts…');
       const off = await lookupBarcode(code);
       if (off) {
         const saved = await insertFood(off);
@@ -43,9 +43,9 @@ export default function Scan() {
       }
       notFound(code);
     } catch (e) {
-      Alert.alert('Lookup failed', e instanceof Error ? e.message : 'Unknown error', [
-        { text: 'Enter manually', onPress: () => manual(code) },
-        { text: 'Retry', onPress: resume },
+      Alert.alert('החיפוש נכשל', e instanceof Error ? e.message : 'שגיאה לא ידועה', [
+        { text: 'הזנה ידנית', onPress: () => manual(code) },
+        { text: 'שוב', onPress: resume },
       ]);
     } finally {
       busy.current = false;
@@ -67,33 +67,33 @@ export default function Scan() {
 
   function notFound(code: string) {
     Alert.alert(
-      'Product not found',
-      `Barcode ${code} isn't in your foods or Open Food Facts. Photograph the nutrition label and it will be read automatically.`,
+      'המוצר לא נמצא',
+      `הברקוד ${code} לא נמצא במזונות שלך וב-Open Food Facts. צלמו את טבלת הערכים התזונתיים והיא תיקרא אוטומטית.`,
       [
-        { text: 'Cancel', style: 'cancel', onPress: resume },
-        { text: 'Enter manually', onPress: () => manual(code) },
-        { text: 'Photograph label', onPress: () => photographLabel(code) },
+        { text: 'ביטול', style: 'cancel', onPress: resume },
+        { text: 'הזנה ידנית', onPress: () => manual(code) },
+        { text: 'צילום התווית', onPress: () => photographLabel(code) },
       ],
     );
   }
 
   async function photographLabel(code: string) {
     if (!(await hasApiKey())) {
-      Alert.alert('API key needed', 'Reading a label with AI needs your Anthropic API key. Add it in the More tab, or enter the values manually.', [
-        { text: 'Enter manually', onPress: () => manual(code) },
-        { text: 'Add API key', onPress: () => router.replace('/more') },
+      Alert.alert('צריך מפתח Gemini', 'קריאת תווית עם AI צריכה מפתח Gemini (חינמי). אפשר להוסיף אותו בהגדרות, או להזין ידנית.', [
+        { text: 'הזנה ידנית', onPress: () => manual(code) },
+        { text: 'להגדרות', onPress: () => router.replace('/settings') },
       ]);
       return;
     }
     const res = await ImagePicker.launchCameraAsync({ quality: 0.8 });
     if (res.canceled) return resume();
-    setStatus('Reading nutrition label…');
+    setStatus('קורא את התווית…');
     try {
       const label = await readNutritionLabel(res.assets[0], code);
       if (!label.readable) {
-        Alert.alert('Label not readable', 'Try again with better lighting and the whole table in frame.', [
-          { text: 'Enter manually', onPress: () => manual(code) },
-          { text: 'Retry photo', onPress: () => photographLabel(code) },
+        Alert.alert('לא הצלחתי לקרוא את התווית', 'נסו שוב עם תאורה טובה יותר וכל הטבלה בתוך התמונה.', [
+          { text: 'הזנה ידנית', onPress: () => manual(code) },
+          { text: 'צילום חוזר', onPress: () => photographLabel(code) },
         ]);
         return;
       }
@@ -102,9 +102,9 @@ export default function Scan() {
         params: { barcode: code, date, meal, prefill: JSON.stringify(label) },
       });
     } catch (e) {
-      Alert.alert('AI error', describeAiError(e), [
-        { text: 'Enter manually', onPress: () => manual(code) },
-        { text: 'Cancel', onPress: resume },
+      Alert.alert('שגיאת AI', describeAiError(e), [
+        { text: 'הזנה ידנית', onPress: () => manual(code) },
+        { text: 'ביטול', onPress: resume },
       ]);
     } finally {
       setStatus('');
@@ -116,10 +116,10 @@ export default function Scan() {
     return (
       <SafeAreaView style={styles.center}>
         <Text style={[font.body, { textAlign: 'center', marginBottom: spacing.lg }]}>
-          Camera access is needed to scan barcodes.
+          צריך גישה למצלמה כדי לסרוק ברקודים.
         </Text>
-        <Button title="Allow camera" onPress={requestPermission} />
-        <Button title="Back" variant="ghost" onPress={() => router.back()} style={{ marginTop: spacing.sm }} />
+        <Button title="אישור גישה למצלמה" onPress={requestPermission} />
+        <Button title="חזרה" variant="ghost" onPress={() => router.back()} style={{ marginTop: spacing.sm }} />
       </SafeAreaView>
     );
   }
@@ -138,11 +138,11 @@ export default function Scan() {
         </Pressable>
         <View style={styles.frameWrap}>
           <View style={styles.frame} />
-          <Text style={styles.hint}>{status || 'Point at a barcode'}</Text>
+          <Text style={styles.hint}>{status || 'כוונו אל הברקוד'}</Text>
           {status ? <ActivityIndicator color="#fff" style={{ marginTop: spacing.sm }} /> : null}
         </View>
         <View style={{ padding: spacing.lg }}>
-          {paused && !status ? <Button title="Scan again" onPress={resume} /> : null}
+          {paused && !status ? <Button title="סריקה נוספת" onPress={resume} /> : null}
         </View>
       </SafeAreaView>
     </View>

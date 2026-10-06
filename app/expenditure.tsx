@@ -36,11 +36,11 @@ export default function Expenditure() {
 
   return (
     <Screen padded={false}>
-      <View style={{ padding: spacing.lg, backgroundColor: colors.card }}>
+      <View style={{ padding: spacing.lg, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <StatHeader
           average={avg}
           difference={first != null && last != null ? last - first : null}
-          unit="kcal"
+          unit="קק״ל"
           range={series && series.dates.length ? formatRange(series.dates[0], series.dates[series.dates.length - 1]) : ''}
           decimals={0}
         />
@@ -63,34 +63,34 @@ export default function Expenditure() {
       <View style={{ padding: spacing.lg }}>
         <Legend
           items={[
-            { label: 'Flux Range', color: colors.expenditure, kind: 'band' },
-            { label: 'Expenditure', color: colors.expenditure, kind: 'line' },
-            { label: 'Holding', color: colors.expenditure, kind: 'square' },
+            { label: 'טווח תנודה', color: colors.expenditure, kind: 'band' },
+            { label: 'הוצאה', color: colors.expenditure, kind: 'line' },
+            { label: 'ממתין', color: colors.expenditure, kind: 'square' },
           ]}
         />
 
-        <SectionHeading>Insights & Data</SectionHeading>
-        <ChangesTable title="Expenditure Changes" changes={changes} color={colors.expenditure} unit="kcal" decimals={0} threshold={10} />
+        <SectionHeading>תובנות ונתונים</SectionHeading>
+        <ChangesTable title="שינויים בהוצאה" changes={changes} color={colors.expenditure} unit="קק״ל" decimals={0} threshold={10} />
 
         <Card>
           <InfoBox
             value={`${profile.tdee}`}
-            unit="kcal"
-            title="Current Expenditure"
-            desc="The latest estimate of your daily energy expenditure based on your weight trend and nutrition data."
+            unit="קק״ל"
+            title="הוצאה נוכחית"
+            desc="ההערכה העדכנית להוצאה הקלורית היומית שלך, לפי מגמת המשקל ונתוני התזונה."
           />
           <InfoBox
-            value={weighedToday ? 'Updating' : 'Holding'}
-            title="Current Strategy"
+            value={weighedToday ? 'מתעדכן' : 'ממתין'}
+            title="מצב נוכחי"
             desc={
               weighedToday
-                ? `Today's weigh-in is in. The estimate uses ${series?.loggedDays ?? 0} fully logged days from the last three weeks.`
-                : 'Log your weight for your next expenditure update.'
+                ? `השקילה של היום נרשמה. ההערכה מבוססת על ${series?.loggedDays ?? 0} ימים מלאים מתוך שלושת השבועות האחרונים.`
+                : 'רשמו משקל כדי לקבל עדכון להוצאה.'
             }
           />
           <Text style={font.tiny}>
-            Expenditure is re-estimated once per day from your smoothed weight trend and logged intake. Log at least 7 full days
-            in a 3-week window for it to move.
+            ההוצאה מוערכת מחדש פעם ביום ממגמת המשקל המוחלקת ומהאכילה הרשומה. כדי שתזוז צריך לפחות 7 ימים מלאים בחלון של 3
+            שבועות.
           </Text>
         </Card>
       </View>

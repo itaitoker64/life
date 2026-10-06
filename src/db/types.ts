@@ -5,6 +5,8 @@ import type { ISODate } from '../lib/dates';
 export type FoodSource = 'user' | 'off' | 'ai' | 'moh';
 export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 export const MEALS: Meal[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+export const MEAL_SHORT: Record<Meal, string> = { breakfast: 'בוקר', lunch: 'צהריים', dinner: 'ערב', snack: 'נשנוש' };
+export const MEAL_OPTS = MEALS.map((m) => ({ value: m, label: MEAL_SHORT[m] }));
 
 // Nutrients are per 100 g.
 export interface Food {

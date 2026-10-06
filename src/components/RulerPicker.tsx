@@ -56,6 +56,7 @@ export function RulerPicker({
   const display = format ? format(value) : value.toFixed(decimals);
 
   return (
+    // The ruler always scrolls left-to-right, also in the Hebrew UI.
     <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
       <View style={{ alignItems: 'center', marginBottom: 6 }}>
         <Text style={[font.display, { color, fontSize: 34 }]}>
@@ -63,7 +64,7 @@ export function RulerPicker({
           {unit ? <Text style={[font.body, { color: colors.muted, fontWeight: '600' }]}> {unit}</Text> : null}
         </Text>
       </View>
-      <View style={{ height: 72 }}>
+      <View style={{ height: 72, direction: 'ltr' }}>
         {width > 0 ? (
           <ScrollView
             ref={ref}

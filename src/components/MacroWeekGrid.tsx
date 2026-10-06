@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native';
 import { colors, font, radius } from '../theme';
 
-const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const DAY_LETTERS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
 
 // The week of daily targets, drawn the way MacroFactor shows a program: a calorie pill on top and
 // stacked protein / fat / carb blocks sized by how many calories each macro contributes.
@@ -24,9 +24,9 @@ export function MacroWeekGrid({
   const total = Math.max(1, kcalFrom.protein + kcalFrom.fat + kcalFrom.carbs);
   const stackH = height - 46;
   const rows = [
-    { key: 'p', label: `${protein} P`, bg: '#FAB5A5', h: (kcalFrom.protein / total) * stackH },
-    { key: 'f', label: `${fat} F`, bg: '#FBD98B', h: (kcalFrom.fat / total) * stackH },
-    { key: 'c', label: `${carbs} C`, bg: '#9EDCB4', h: (kcalFrom.carbs / total) * stackH },
+    { key: 'p', label: `${protein} ח`, bg: 'rgba(255,122,92,0.28)', h: (kcalFrom.protein / total) * stackH },
+    { key: 'f', label: `${fat} ש`, bg: 'rgba(251,191,36,0.26)', h: (kcalFrom.fat / total) * stackH },
+    { key: 'c', label: `${carbs} פ`, bg: 'rgba(34,197,94,0.26)', h: (kcalFrom.carbs / total) * stackH },
   ];
 
   return (
@@ -35,7 +35,7 @@ export function MacroWeekGrid({
         <View key={i} style={{ flex: 1 }}>
           <View
             style={{
-              backgroundColor: '#B9D0FB',
+              backgroundColor: 'rgba(79,141,255,0.3)',
               borderRadius: radius.pill,
               paddingVertical: 5,
               alignItems: 'center',

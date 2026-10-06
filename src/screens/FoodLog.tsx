@@ -4,22 +4,21 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, Text, View } from 'react-native';
 import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { DateHeader } from '../../src/components/DateHeader';
-import { Row, styles as ui } from '../../src/components/ui';
-import { entriesForDate, moveEntry } from '../../src/db/log';
-import { MEALS, parseComponents, type LogEntry, type Meal } from '../../src/db/types';
-import { useApp } from '../../src/state/store';
-import { colors, font, radius, shadow, spacing } from '../../src/theme';
+import { DateHeader } from '../components/DateHeader';
+import { Row, styles as ui } from '../components/ui';
+import { entriesForDate, moveEntry } from '../db/log';
+import { MEALS, parseComponents, type LogEntry, type Meal } from '../db/types';
+import { useApp } from '../state/store';
+import { colors, font, radius, shadow, spacing } from '../theme';
 
-const MEAL_LABEL: Record<Meal, string> = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snacks' };
+export const MEAL_LABEL: Record<Meal, string> = { breakfast: 'ארוחת בוקר', lunch: 'ארוחת צהריים', dinner: 'ארוחת ערב', snack: 'נשנושים' };
 
 interface Rect {
   y: number;
   h: number;
 }
 
-export default function FoodLog() {
+export function FoodLog() {
   const { selectedDate, version, bump, profile } = useApp();
   const router = useRouter();
   const [entries, setEntries] = useState<LogEntry[]>([]);
@@ -99,7 +98,7 @@ export default function FoodLog() {
   const total = entries.reduce((s, e) => s + e.kcal, 0);
 
   return (
-    <SafeAreaView style={ui.screen} edges={['top', 'left', 'right']}>
+    <View style={ui.screen}>
       <View
         ref={rootRef}
         style={{ flex: 1 }}
@@ -111,14 +110,14 @@ export default function FoodLog() {
           scrollEnabled={!dragging}
           showsVerticalScrollIndicator={false}
         >
-          <DateHeader title="Food Log" />
+          <DateHeader title="יומן אכילה" />
           <Row style={{ justifyContent: 'space-between', marginBottom: spacing.md }}>
             <Text style={font.small}>
-              {Math.round(total)} / {profile?.target_kcal ?? 0} kcal
+              {Math.round(total)} / {profile?.target_kcal ?? 0} קק״ל
             </Text>
             <Text style={font.small}>
-              P {Math.round(entries.reduce((s, e) => s + e.protein, 0))} · C{' '}
-              {Math.round(entries.reduce((s, e) => s + e.carbs, 0))} · F {Math.round(entries.reduce((s, e) => s + e.fat, 0))}
+              ח {Math.round(entries.reduce((s, e) => s + e.protein, 0))} · פ{' '}
+              {Math.round(entries.reduce((s, e) => s + e.carbs, 0))} · ש {Math.round(entries.reduce((s, e) => s + e.fat, 0))}
             </Text>
           </Row>
 
@@ -138,16 +137,16 @@ export default function FoodLog() {
                   ui.card,
                   {
                     padding: 0,
-                    borderWidth: 2,
-                    borderColor: isTarget ? colors.info : 'transparent',
-                    backgroundColor: isTarget ? '#EEF3FE' : colors.card,
+                    borderWidth: isTarget ? 2 : 1,
+                    borderColor: isTarget ? colors.info : colors.border,
+                    backgroundColor: isTarget ? colors.primarySoft : colors.card,
                   },
                 ]}
               >
                 <Row style={{ justifyContent: 'space-between', padding: spacing.md, paddingBottom: spacing.sm }}>
                   <View>
                     <Text style={font.h3}>{MEAL_LABEL[meal]}</Text>
-                    <Text style={font.tiny}>{Math.round(kcal)} kcal</Text>
+                    <Text style={font.tiny}>{Math.round(kcal)} קק״ל</Text>
                   </View>
                   <Row style={{ gap: spacing.md }}>
                     <Pressable hitSlop={8} onPress={() => router.push({ pathname: '/food/scan', params })}>
@@ -157,7 +156,7 @@ export default function FoodLog() {
                       <Ionicons name="camera-outline" size={22} color={colors.text} />
                     </Pressable>
                     <Pressable hitSlop={8} onPress={() => router.push({ pathname: '/food/search', params })}>
-                      <Ionicons name="add-circle" size={26} color={colors.text} />
+                      <Ionicons name="add-circle" size={26} color={colors.primary} />
                     </Pressable>
                   </Row>
                 </Row>
@@ -175,13 +174,13 @@ export default function FoodLog() {
                 ))}
                 {items.length === 0 ? (
                   <Text style={[font.tiny, { paddingHorizontal: spacing.md, paddingBottom: spacing.md }]}>
-                    {isTarget ? 'Drop here' : 'Nothing logged'}
+                    {isTarget ? 'שחררו כאן' : 'עוד לא נרשם כלום'}
                   </Text>
                 ) : null}
               </View>
             );
           })}
-          <Text style={[font.tiny, { textAlign: 'center' }]}>Tap to edit · hold and drag to move to another meal</Text>
+          <Text style={[font.tiny, { textAlign: 'center' }]}>הקשה לעריכה · לחיצה ארוכה וגרירה להעברה לארוחה אחרת</Text>
         </ScrollView>
 
         {dragging ? (
@@ -208,7 +207,7 @@ export default function FoodLog() {
           </Animated.View>
         ) : null}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -268,7 +267,7 @@ function DraggableEntry({
             paddingVertical: 10,
             borderTopWidth: 1,
             borderTopColor: colors.border,
-            backgroundColor: pressed ? colors.bg : 'transparent',
+            backgroundColor: pressed ? colors.elev2 : 'transparent',
           })}
         >
           <EntryContent entry={entry} />
@@ -282,7 +281,7 @@ function EntryContent({ entry }: { entry: LogEntry }) {
   const comps = parseComponents(entry.components);
   return (
     <Row style={{ justifyContent: 'space-between' }}>
-      <View style={{ flex: 1, paddingRight: spacing.sm }}>
+      <View style={{ flex: 1, paddingEnd: spacing.sm }}>
         <Text style={font.body} numberOfLines={1}>
           {entry.name}
         </Text>
@@ -292,7 +291,7 @@ function EntryContent({ entry }: { entry: LogEntry }) {
           </Text>
         ) : null}
         <Text style={font.tiny}>
-          {Math.round(entry.grams)} g · P {Math.round(entry.protein)} · C {Math.round(entry.carbs)} · F {Math.round(entry.fat)}
+          {Math.round(entry.grams)} ג׳ · ח {Math.round(entry.protein)} · פ {Math.round(entry.carbs)} · ש {Math.round(entry.fat)}
         </Text>
       </View>
       <Text style={[font.body, { fontWeight: '600' }]}>{Math.round(entry.kcal)}</Text>

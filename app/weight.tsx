@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RANGE_DAYS, axisLabels, firstLast, formatRange, mean, periodChanges, type RangeKey } from '../src/lib/series';
 import { displayToKg, fmtWeight, kgToDisplay, weightLabel } from '../src/lib/units';
 import { useApp } from '../src/state/store';
-import { colors, font, spacing } from '../src/theme';
+import { chevronBack, chevronForward, colors, font, spacing } from '../src/theme';
 
 export default function Weight() {
   const { profile, bump, version, refreshProfile } = useApp();
@@ -61,10 +61,10 @@ export default function Weight() {
   }
 
   function confirmDelete(e: WeightEntry) {
-    Alert.alert('Delete weigh-in', `${formatShortDate(e.date)}: ${fmtWeight(e.weight_kg, units)}`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert('מחיקת שקילה', `${formatShortDate(e.date)}: ${fmtWeight(e.weight_kg, units)}`, [
+      { text: 'ביטול', style: 'cancel' },
       {
-        text: 'Delete',
+        text: 'מחיקה',
         style: 'destructive',
         onPress: async () => {
           await deleteWeight(e.id);
@@ -85,7 +85,7 @@ export default function Weight() {
 
   return (
     <Screen padded={false}>
-      <View style={{ padding: spacing.lg, backgroundColor: colors.card }}>
+      <View style={{ padding: spacing.lg, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <StatHeader
           average={avg}
           difference={first != null && last != null ? last - first : null}
@@ -107,7 +107,7 @@ export default function Weight() {
             labels={axisLabels(series.dates)}
           />
         ) : (
-          <Text style={[font.small, { paddingVertical: spacing.xl }]}>Log your first weigh-in to see the trend.</Text>
+          <Text style={[font.small, { paddingVertical: spacing.xl }]}>רשמו שקילה ראשונה כדי לראות את המגמה.</Text>
         )}
         <View style={{ marginTop: spacing.md }}>
           <RangeSelector value={range} onChange={setRange} />
@@ -117,20 +117,20 @@ export default function Weight() {
       <View style={{ padding: spacing.lg }}>
         <Legend
           items={[
-            { label: 'Scale Weight', color: colors.weight, kind: 'faint' },
-            { label: 'Trend Weight', color: colors.weight, kind: 'line' },
+            { label: 'משקל במשקל', color: colors.weight, kind: 'faint' },
+            { label: 'מגמת משקל', color: colors.weight, kind: 'line' },
           ]}
         />
 
         <Card>
           <CardHeader
-            title="Log weight"
-            subtitle={savedForDate != null ? `Saved ${fmtWeight(savedForDate, units)} for this day` : 'Nothing saved for this day yet'}
+            title="רישום משקל"
+            subtitle={savedForDate != null ? `נשמר ${fmtWeight(savedForDate, units)} ליום הזה` : 'עוד לא נשמר משקל ליום הזה'}
             color={colors.weight}
             right={
               <Row style={{ gap: spacing.xs }}>
                 <Pressable onPress={() => setLogDate(addDays(logDate, -1))} hitSlop={8} style={navBtn}>
-                  <Ionicons name="chevron-back" size={18} color={colors.text} />
+                  <Ionicons name={chevronBack} size={18} color={colors.text} />
                 </Pressable>
                 <Text style={[font.small, { color: colors.text, fontWeight: '700', minWidth: 70, textAlign: 'center' }]}>
                   {formatDateLabel(logDate)}
@@ -140,7 +140,7 @@ export default function Weight() {
                   hitSlop={8}
                   style={[navBtn, { opacity: logDate < today() ? 1 : 0.3 }]}
                 >
-                  <Ionicons name="chevron-forward" size={18} color={colors.text} />
+                  <Ionicons name={chevronForward} size={18} color={colors.text} />
                 </Pressable>
               </Row>
             }
@@ -158,44 +158,44 @@ export default function Weight() {
             />
           ) : null}
           <Button
-            title={savedForDate == null ? `Save for ${formatDateLabel(logDate).toLowerCase()}` : isDirty ? 'Update weigh-in' : 'Saved'}
+            title={savedForDate == null ? `שמירה ל${formatDateLabel(logDate)}` : isDirty ? 'עדכון השקילה' : 'נשמר'}
             onPress={save}
             loading={saving}
             disabled={!isDirty}
-            style={{ marginTop: spacing.md, backgroundColor: colors.black }}
+            style={{ marginTop: spacing.md }}
           />
           <Text style={[font.tiny, { marginTop: spacing.sm }]}>
-            The date defaults to today. Use the arrows to add or fix a past weigh-in; each day keeps one weight.
+            ברירת המחדל היא היום. החצים מאפשרים להוסיף או לתקן שקילה קודמת; לכל יום נשמר משקל אחד.
           </Text>
         </Card>
 
-        <SectionHeading>Insights & Data</SectionHeading>
-        <ChangesTable title="Weight Changes" changes={changes} color={colors.weight} unit={wl} decimals={1} threshold={0.05} />
+        <SectionHeading>תובנות ונתונים</SectionHeading>
+        <ChangesTable title="שינויים במשקל" changes={changes} color={colors.weight} unit={wl} decimals={1} threshold={0.05} />
 
         <Card>
           <InfoBox
             value={ins?.currentKg != null ? disp(ins.currentKg).toFixed(1) : '—'}
             unit={wl}
-            title="Current Weight"
-            desc="Our estimate of your true weight after smoothing out day-to-day fluctuations."
+            title="משקל נוכחי"
+            desc="ההערכה שלנו למשקל האמיתי שלך, אחרי החלקת התנודות היומיות."
           />
           <InfoBox
             value={ins?.weeklyChangeKg != null ? Math.abs(disp(ins.weeklyChangeKg)).toFixed(2) : '—'}
-            unit={`${wl} per week`}
-            title="Weekly Weight Change"
-            desc={`Your typical weekly rate of weight ${gaining ? 'gain' : 'loss'} over the past three weeks.`}
+            unit={`${wl} לשבוע`}
+            title="שינוי שבועי במשקל"
+            desc={`קצב ה${gaining ? 'עלייה' : 'ירידה'} השבועי שלך בשלושת השבועות האחרונים.`}
           />
           <InfoBox
             value={ins?.energyPerDay != null ? `${Math.round(Math.abs(ins.energyPerDay))}` : '—'}
-            unit="kcal per day"
-            title={gaining ? 'Energy Surplus' : 'Energy Deficit'}
-            desc={`Our estimate of your average daily caloric ${gaining ? 'surplus' : 'deficit'}, based on your rate of weight ${gaining ? 'gain' : 'loss'} over the past three weeks.`}
+            unit="קק״ל ליום"
+            title={gaining ? 'עודף קלורי' : 'גירעון קלורי'}
+            desc={`הערכה ל${gaining ? 'עודף' : 'גירעון'} הקלורי היומי הממוצע שלך, לפי קצב ה${gaining ? 'עלייה' : 'ירידה'} במשקל בשלושת השבועות האחרונים.`}
           />
           <InfoBox
             value={ins?.projection30Kg != null ? disp(ins.projection30Kg).toFixed(1) : '—'}
             unit={wl}
-            title="30-Day Projection"
-            desc={`Your projected weight in 30 days if your current rate of weight ${gaining ? 'gain' : 'loss'} is met.`}
+            title="תחזית ל-30 יום"
+            desc={`המשקל הצפוי בעוד 30 יום אם קצב ה${gaining ? 'עלייה' : 'ירידה'} הנוכחי יימשך.`}
           />
         </Card>
 
@@ -212,9 +212,9 @@ export default function Weight() {
               </Row>
             </Pressable>
           ))}
-          {entries.length === 0 ? <Text style={[font.small, { padding: spacing.md }]}>No weigh-ins yet.</Text> : null}
+          {entries.length === 0 ? <Text style={[font.small, { padding: spacing.md }]}>עדיין אין שקילות.</Text> : null}
         </Card>
-        <Text style={[font.tiny, { textAlign: 'center' }]}>Long-press a weigh-in to delete</Text>
+        <Text style={[font.tiny, { textAlign: 'center' }]}>לחיצה ארוכה על שקילה כדי למחוק</Text>
       </View>
     </Screen>
   );
@@ -224,7 +224,7 @@ const navBtn = {
   width: 30,
   height: 30,
   borderRadius: 15,
-  backgroundColor: colors.track,
+  backgroundColor: colors.elev2,
   alignItems: 'center' as const,
   justifyContent: 'center' as const,
 };

@@ -3,198 +3,190 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { TrendChart } from '../../src/components/charts';
-import { Card } from '../../src/components/ui';
-import { ModeToggle, WeeklyNutrition, type NutritionMode } from '../../src/components/WeeklyNutrition';
-import { dailyTotals, type DailyTotal } from '../../src/db/log';
-import { expenditureSeries, weightSeries, type ExpenditureSeries, type WeightSeries } from '../../src/lib/analytics';
-import { today, type ISODate } from '../../src/lib/dates';
-import { weekDays } from '../../src/lib/series';
-import { kgToDisplay, weightLabel } from '../../src/lib/units';
+import { MacroBar, TrendChart } from '../../src/components/charts';
+import { LinkRowSmall, NoPlanCard, ReadinessCard, RunHero } from '../../src/components/run';
+import { DeloadCard, StrengthHero } from '../../src/components/strengthCards';
+import { Card, IconButton, Row, SectionTitle } from '../../src/components/ui';
+import { totalsForDate } from '../../src/db/log';
+import type { DayTotals } from '../../src/db/types';
+import { weightForDate } from '../../src/db/weight';
+import { weightSeries, type WeightSeries } from '../../src/lib/analytics';
+import { checkinDue } from '../../src/lib/coach';
+import { formatLongDate, today } from '../../src/lib/dates';
+import { hasIntervals, latestAssessment, planFor, useRunVersion } from '../../src/run/store';
 import { useApp } from '../../src/state/store';
-import { colors, font, radius, shadow, spacing } from '../../src/theme';
+import { useLiftVersion } from '../../src/strength/store';
+import { kgToDisplay, weightLabel } from '../../src/lib/units';
+import { chevronForward, colors, font, radius, spacing } from '../../src/theme';
 
-export default function Dashboard() {
-  const { profile, selectedDate, setSelectedDate, version } = useApp();
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 5) return 'לילה טוב';
+  if (h < 12) return 'בוקר טוב';
+  if (h < 17) return 'צהריים טובים';
+  if (h < 21) return 'ערב טוב';
+  return 'לילה טוב';
+}
+
+export default function Today() {
+  const { profile, version, setSelectedDate } = useApp();
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const [mode, setMode] = useState<NutritionMode>('remaining');
-  const [totals, setTotals] = useState<Map<ISODate, DailyTotal>>(new Map());
-  const [exp, setExp] = useState<ExpenditureSeries | null>(null);
+  useLiftVersion();
+  useRunVersion();
+  const [totals, setTotals] = useState<DayTotals | null>(null);
   const [wt, setWt] = useState<WeightSeries | null>(null);
-  const days = weekDays(selectedDate);
+  const [weighed, setWeighed] = useState(false);
+  const [icu, setIcu] = useState(true);
+  const t = today();
 
   useFocusEffect(
     useCallback(() => {
       let alive = true;
+      setSelectedDate(t);
       (async () => {
-        const [tots, e, w] = await Promise.all([
-          dailyTotals(days[0], days[6]),
-          expenditureSeries(7, profile?.tdee ?? 0),
-          weightSeries(7),
-        ]);
+        const [tot, w, todayW, connected] = await Promise.all([totalsForDate(t), weightSeries(14), weightForDate(t), hasIntervals()]);
         if (!alive) return;
-        setTotals(new Map(tots.map((t) => [t.date, t])));
-        setExp(e);
+        setTotals(tot);
         setWt(w);
+        setWeighed(!!todayW);
+        setIcu(connected);
       })();
       return () => {
         alive = false;
       };
-    }, [days[0], version, profile?.tdee]),
+    }, [t, version]),
   );
 
   if (!profile) return null;
-  const units = profile.units;
-  const cardW = (width - spacing.lg * 2 - spacing.md) / 2;
+  const run = planFor(t);
+  const assessment = latestAssessment();
+  const kcal = totals?.kcal ?? 0;
+  const left = profile.target_kcal - kcal;
   const lastTrend = wt?.trend.filter((v) => v != null).slice(-1)[0] ?? null;
-  const lastTdee = exp?.tdee.filter((v) => v != null).slice(-1)[0] ?? profile.tdee;
-  const params = { date: selectedDate, meal: 'snack' };
+  const params = { date: t, meal: 'snack' };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-        <View style={{ backgroundColor: colors.card, paddingHorizontal: spacing.lg, paddingBottom: spacing.lg }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.md }}>
-            <Text style={[font.screenTitle, { fontSize: 22 }]}>Dashboard</Text>
-            <Pressable
-              onPress={() => router.push('/(tabs)/more')}
-              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.track, alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Ionicons name="options-outline" size={20} color={colors.text} />
-            </Pressable>
+      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+        <Row style={{ marginBottom: spacing.lg, alignItems: 'flex-end' }}>
+          <View style={{ flex: 1 }}>
+            <Text style={[font.label, { fontSize: 12.5 }]}>{formatLongDate(t)}</Text>
+            <Text style={{ color: colors.text, fontSize: 30, fontWeight: '800', letterSpacing: -0.6 }}>{greeting()}</Text>
           </View>
+          <IconButton name="settings-outline" onPress={() => router.push('/settings')} bg={colors.elev2} />
+        </Row>
 
-          <Pressable onPress={() => setSelectedDate(today())}>
-            <Text style={[font.h2, { marginBottom: spacing.lg }]}>Weekly Nutrition</Text>
+        {checkinDue(profile) ? (
+          <Pressable onPress={() => router.push('/program-update')}>
+            <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, borderColor: colors.primary }}>
+              <Ionicons name="checkmark-done-circle" size={28} color={colors.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={font.h3}>צ׳ק-אין שבועי מוכן</Text>
+                <Text style={font.small}>בדיקת השבוע ועדכון יעדי התזונה</Text>
+              </View>
+              <Ionicons name={chevronForward} size={18} color={colors.faint} />
+            </Card>
           </Pressable>
-          <WeeklyNutrition
-            days={days}
-            totals={totals}
-            selected={selectedDate}
-            onSelect={setSelectedDate}
-            targets={{ kcal: profile.target_kcal, protein: profile.target_protein, fat: profile.target_fat, carbs: profile.target_carbs }}
-            mode={mode}
-          />
-          <View style={{ marginTop: spacing.xl }}>
-            <ModeToggle value={mode} onChange={setMode} />
-          </View>
-        </View>
+        ) : null}
 
-        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.xl }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md }}>
-            <Text style={font.h2}>Insights & Analytics</Text>
-            <Pressable onPress={() => router.push('/(tabs)/strategy')}>
-              <Text style={[font.small, { color: colors.text, fontWeight: '600', textDecorationLine: 'underline' }]}>See All</Text>
-            </Pressable>
-          </View>
-          <View style={{ flexDirection: 'row', gap: spacing.md }}>
-            <InsightCard
-              title="Expenditure"
-              width={cardW}
-              onPress={() => router.push('/expenditure')}
-              value={`${Math.round(lastTdee)}`}
-              unit="kcal"
-            >
-              {exp ? (
+        {/* ---- nutrition ---- */}
+        <SectionTitle right={<LinkRowSmall label="ליומן" onPress={() => router.push('/(tabs)/nutrition')} />}>תזונה</SectionTitle>
+        <Card>
+          <Row style={{ justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: spacing.md }}>
+            <View>
+              <Text style={font.label}>{left >= 0 ? 'נשארו היום' : 'מעל היעד'}</Text>
+              <Text style={[font.display, { color: left >= 0 ? colors.text : colors.danger }]}>
+                {Math.abs(Math.round(left))}
+                <Text style={[font.small, { fontWeight: '600' }]}> קק״ל</Text>
+              </Text>
+            </View>
+            <Text style={font.small}>
+              {Math.round(kcal)} / {profile.target_kcal}
+            </Text>
+          </Row>
+          <MacroBar label="חלבון" value={totals?.protein ?? 0} max={profile.target_protein} color={colors.protein} />
+          <MacroBar label="פחמימות" value={totals?.carbs ?? 0} max={profile.target_carbs} color={colors.carbs} />
+          <MacroBar label="שומן" value={totals?.fat ?? 0} max={profile.target_fat} color={colors.fat} />
+          <Row style={{ gap: spacing.sm, marginTop: spacing.sm }}>
+            <QuickBtn icon="search" label="חיפוש" onPress={() => router.push({ pathname: '/food/search', params })} />
+            <QuickBtn icon="barcode-outline" label="ברקוד" onPress={() => router.push({ pathname: '/food/scan', params })} />
+            <QuickBtn icon="sparkles-outline" label="צילום AI" onPress={() => router.push({ pathname: '/food/photo', params })} />
+          </Row>
+        </Card>
+
+        {/* ---- strength ---- */}
+        <SectionTitle right={<LinkRowSmall label="לאימונים" onPress={() => router.push('/(tabs)/train')} />}>כוח</SectionTitle>
+        <StrengthHero />
+        <DeloadCard compact />
+
+        {/* ---- running ---- */}
+        <SectionTitle right={<LinkRowSmall label="לתוכנית" onPress={() => router.push({ pathname: '/(tabs)/train', params: { tab: 'run' } })} />}>ריצה</SectionTitle>
+        {run ? <RunHero plan={run} compact /> : <NoPlanCard connected={icu} />}
+        {assessment ? <ReadinessCard a={assessment} /> : null}
+
+        {/* ---- body ---- */}
+        <SectionTitle right={<LinkRowSmall label="למגמה" onPress={() => router.push('/weight')} />}>משקל</SectionTitle>
+        <Pressable onPress={() => router.push('/weight')}>
+          <Card>
+            <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <View>
+                <Text style={font.label}>מגמה</Text>
+                <Text style={font.h1}>
+                  {lastTrend != null ? kgToDisplay(lastTrend, profile.units).toFixed(1) : '—'}
+                  <Text style={font.small}> {weightLabel(profile.units)}</Text>
+                </Text>
+              </View>
+              <View
+                style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: radius.pill,
+                  backgroundColor: weighed ? colors.successSoft : colors.primarySoft,
+                }}
+              >
+                <Text style={{ color: weighed ? colors.success : colors.primary, fontWeight: '700', fontSize: 12 }}>
+                  {weighed ? 'נשקלת היום ✓' : 'לרשום שקילה'}
+                </Text>
+              </View>
+            </Row>
+            {wt && wt.dates.length > 1 ? (
+              <View style={{ marginTop: spacing.sm }}>
                 <TrendChart
                   compact
-                  holdingLast
-                  width={cardW - spacing.lg * 2}
-                  height={64}
-                  color={colors.expenditure}
-                  bandColor={colors.expenditureSoft}
-                  points={exp.dates.map((_, i) => ({ trend: exp.tdee[i], lo: exp.lo[i], hi: exp.hi[i] }))}
-                />
-              ) : null}
-            </InsightCard>
-            <InsightCard
-              title="Weight Trend"
-              width={cardW}
-              onPress={() => router.push('/weight')}
-              value={lastTrend != null ? kgToDisplay(lastTrend, units).toFixed(1) : '—'}
-              unit={weightLabel(units)}
-            >
-              {wt && wt.dates.length ? (
-                <TrendChart
-                  compact
-                  width={cardW - spacing.lg * 2}
-                  height={64}
+                  width={width - spacing.lg * 2 - 30}
+                  height={70}
                   color={colors.weight}
-                  points={wt.dates.map((_, i) => ({ trend: wt.trend[i] != null ? kgToDisplay(wt.trend[i]!, units) : null }))}
+                  points={wt.dates.map((_, i) => ({ trend: wt.trend[i] != null ? kgToDisplay(wt.trend[i]!, profile.units) : null }))}
                 />
-              ) : (
-                <View style={{ height: 64, justifyContent: 'center' }}>
-                  <Text style={font.tiny}>Log a weigh-in to start</Text>
-                </View>
-              )}
-            </InsightCard>
-          </View>
-        </View>
+              </View>
+            ) : null}
+          </Card>
+        </Pressable>
       </ScrollView>
-
-      <View style={{ position: 'absolute', left: spacing.lg, right: spacing.lg, bottom: spacing.md, flexDirection: 'row', gap: spacing.sm }}>
-        <Pressable
-          onPress={() => router.push({ pathname: '/food/search', params })}
-          style={{
-            flex: 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: colors.track,
-            borderRadius: radius.pill,
-            paddingHorizontal: 18,
-            height: 56,
-            gap: 12,
-            ...shadow,
-          }}
-        >
-          <Ionicons name="search" size={20} color={colors.text} />
-          <Text style={[font.body, { color: colors.muted, flex: 1, fontSize: 17 }]}>Search for a food</Text>
-          <Pressable onPress={() => router.push({ pathname: '/food/scan', params })} hitSlop={10}>
-            <Ionicons name="barcode-outline" size={24} color={colors.text} />
-          </Pressable>
-        </Pressable>
-        <Pressable
-          onPress={() => router.push({ pathname: '/food/photo', params })}
-          style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors.track, alignItems: 'center', justifyContent: 'center', ...shadow }}
-        >
-          <Ionicons name="sparkles" size={22} color={colors.text} />
-        </Pressable>
-      </View>
     </SafeAreaView>
   );
 }
 
-function InsightCard({
-  title,
-  width,
-  value,
-  unit,
-  onPress,
-  children,
-}: {
-  title: string;
-  width: number;
-  value: string;
-  unit: string;
-  onPress: () => void;
-  children: React.ReactNode;
-}) {
+function QuickBtn({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
-      <Card style={{ width, marginBottom: 0 }}>
-        <Text style={font.h3}>{title}</Text>
-        <Text style={[font.small, { marginBottom: spacing.sm }]}>Last 7 Days</Text>
-        {children}
-        <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing.md }} />
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text style={[font.h2, { fontSize: 22 }]}>
-            {value}
-            <Text style={[font.small, { color: colors.muted }]}> {unit}</Text>
-          </Text>
-          <Ionicons name="chevron-forward" size={20} color={colors.faint} />
-        </View>
-      </Card>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        minHeight: 42,
+        borderRadius: radius.md,
+        backgroundColor: pressed ? colors.border : colors.elev2,
+        borderWidth: 1,
+        borderColor: colors.border,
+      })}
+    >
+      <Ionicons name={icon} size={16} color={colors.text} />
+      <Text style={{ color: colors.text, fontWeight: '700', fontSize: 13 }}>{label}</Text>
     </Pressable>
   );
 }

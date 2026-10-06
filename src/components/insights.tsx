@@ -5,6 +5,8 @@ import { Card } from './ui';
 import type { PeriodChange, RangeKey } from '../lib/series';
 import { colors, font, radius, spacing } from '../theme';
 
+const RANGE_HE: Record<RangeKey, string> = { '1W': 'שבוע', '1M': 'חודש', '3M': '3 ח׳', '6M': '6 ח׳', '1Y': 'שנה', ALL: 'הכול' };
+
 export function RangeSelector({ value, onChange }: { value: RangeKey; onChange: (r: RangeKey) => void }) {
   const opts: RangeKey[] = ['1W', '1M', '3M', '6M', '1Y', 'ALL'];
   return (
@@ -20,10 +22,10 @@ export function RangeSelector({ value, onChange }: { value: RangeKey; onChange: 
               paddingVertical: 10,
               borderRadius: radius.pill,
               alignItems: 'center',
-              backgroundColor: active ? colors.black : 'transparent',
+              backgroundColor: active ? colors.primary : 'transparent',
             }}
           >
-            <Text style={{ color: active ? '#fff' : colors.text, fontWeight: '700', fontSize: 13 }}>{o === 'ALL' ? 'All' : o}</Text>
+            <Text style={{ color: active ? '#fff' : colors.text, fontWeight: '700', fontSize: 13 }}>{RANGE_HE[o]}</Text>
           </Pressable>
         );
       })}
@@ -45,7 +47,7 @@ export function Legend({ items }: { items: Array<{ label: string; color: string;
           ) : (
             <View style={{ width: 22, height: 10, alignItems: 'center', justifyContent: 'center' }}>
               <View style={{ position: 'absolute', width: 22, height: 3, backgroundColor: it.color, borderRadius: 2 }} />
-              <View style={{ width: 9, height: 9, borderRadius: 5, borderWidth: 2, borderColor: it.color, backgroundColor: '#fff' }} />
+              <View style={{ width: 9, height: 9, borderRadius: 5, borderWidth: 2, borderColor: it.color, backgroundColor: colors.card }} />
             </View>
           )}
           <Text style={[font.small, { color: colors.text, fontWeight: '600' }]}>{it.label}</Text>
@@ -77,9 +79,9 @@ export function ChangesTable({
         const dir = c.delta == null ? null : Math.abs(c.delta) < threshold ? 'flat' : c.delta > 0 ? 'up' : 'down';
         return (
           <View key={c.days} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10 }}>
-            <Text style={[font.small, { width: 56 }]}>{c.days}-day</Text>
+            <Text style={[font.small, { width: 56 }]}>{c.days} ימים</Text>
             <Sparkline values={c.spark} color={color} width={72} height={30} />
-            <Text style={[font.body, { fontWeight: '600', width: 84, marginLeft: spacing.sm, fontSize: 14 }]}>
+            <Text style={[font.body, { fontWeight: '600', width: 84, marginStart: spacing.sm, fontSize: 14 }]}>
               {c.delta == null ? '—' : `${c.delta > 0 ? '' : c.delta < 0 ? '-' : ''}${Math.abs(c.delta).toFixed(decimals)} ${unit}`}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
@@ -91,7 +93,7 @@ export function ChangesTable({
                 />
               ) : null}
               <Text style={font.small} numberOfLines={1}>
-                {dir === 'up' ? 'Increase' : dir === 'down' ? 'Decrease' : dir === 'flat' ? 'No Change' : 'Not enough data'}
+                {dir === 'up' ? 'עלייה' : dir === 'down' ? 'ירידה' : dir === 'flat' ? 'ללא שינוי' : 'אין מספיק נתונים'}
               </Text>
             </View>
           </View>
@@ -108,7 +110,7 @@ export function InfoBox({ value, unit, title, desc }: { value: string; unit?: st
         style={{
           width: 116,
           minHeight: 96,
-          backgroundColor: colors.bg,
+          backgroundColor: colors.elev2,
           borderRadius: radius.sm,
           alignItems: 'center',
           justifyContent: 'center',
@@ -142,7 +144,7 @@ export function StatHeader({
   return (
     <View style={{ flexDirection: 'row', gap: spacing.xl, marginBottom: spacing.md }}>
       <View>
-        <Text style={font.small}>Average</Text>
+        <Text style={font.small}>ממוצע</Text>
         <Text style={[font.display, { fontSize: 30 }]}>
           {average != null ? average.toFixed(decimals) : '—'}
           <Text style={[font.small, { fontWeight: '500' }]}> {unit}</Text>
@@ -150,7 +152,7 @@ export function StatHeader({
         <Text style={font.small}>{range}</Text>
       </View>
       <View>
-        <Text style={font.small}>Difference</Text>
+        <Text style={font.small}>הפרש</Text>
         <Text style={[font.display, { fontSize: 30 }]}>
           {difference != null ? `${difference < 0 ? '-' : ''}${Math.abs(difference).toFixed(decimals)}` : '—'}
           <Text style={[font.small, { fontWeight: '500' }]}> {unit}</Text>

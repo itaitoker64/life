@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 import type { DailyTotal } from '../db/log';
-import { parseISODate, today, type ISODate } from '../lib/dates';
+import { today, weekdayNarrow, type ISODate } from '../lib/dates';
 import { colors, font, radius, spacing } from '../theme';
 
 export type NutritionMode = 'consumed' | 'remaining';
@@ -34,9 +34,9 @@ export function WeeklyNutrition({
 }) {
   const rows: RowSpec[] = [
     { key: 'kcal', color: colors.calories, target: targets.kcal, letter: '', icon: true },
-    { key: 'protein', color: colors.protein, target: targets.protein, letter: 'P' },
-    { key: 'fat', color: colors.fat, target: targets.fat, letter: 'F' },
-    { key: 'carbs', color: colors.carbs, target: targets.carbs, letter: 'C' },
+    { key: 'protein', color: colors.protein, target: targets.protein, letter: 'ח' },
+    { key: 'fat', color: colors.fat, target: targets.fat, letter: 'ש' },
+    { key: 'carbs', color: colors.carbs, target: targets.carbs, letter: 'פ' },
   ];
   const t = today();
   const sel = totals.get(selected);
@@ -48,7 +48,7 @@ export function WeeklyNutrition({
           const isSel = d === selected;
           const future = d > t;
           const tot = totals.get(d);
-          const letter = parseISODate(d).toLocaleDateString('en-US', { weekday: 'narrow' });
+          const letter = weekdayNarrow(d);
           return (
             <Pressable
               key={d}
@@ -60,7 +60,7 @@ export function WeeklyNutrition({
                 paddingBottom: 4,
                 borderRadius: 12,
                 borderWidth: 2,
-                borderColor: isSel ? colors.black : 'transparent',
+                borderColor: isSel ? colors.primary : 'transparent',
               }}
             >
               {rows.map((r, i) => {
@@ -92,7 +92,7 @@ export function WeeklyNutrition({
                           marginVertical: 4,
                           borderTopWidth: mode === 'consumed' ? 3 : 0,
                           borderBottomWidth: mode === 'remaining' ? 3 : 0,
-                          borderColor: colors.black,
+                          borderColor: colors.text,
                         }}
                       />
                     ) : (
@@ -118,7 +118,7 @@ export function WeeklyNutrition({
         })}
       </View>
 
-      <View style={{ width: 74, paddingLeft: spacing.sm, paddingTop: 4 }}>
+      <View style={{ width: 74, paddingStart: spacing.sm, paddingTop: 4 }}>
         {rows.map((r, i) => {
           const v = sel?.[r.key] ?? 0;
           const shown = mode === 'consumed' ? v : Math.max(0, r.target - v);
@@ -129,12 +129,12 @@ export function WeeklyNutrition({
                   {Math.round(shown)}
                 </Text>
                 {r.icon ? (
-                  <Ionicons name="flame" size={11} color={colors.muted} style={{ marginLeft: 2 }} />
+                  <Ionicons name="flame" size={11} color={colors.muted} style={{ marginStart: 2 }} />
                 ) : (
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: colors.muted, marginLeft: 3 }}>{r.letter}</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: colors.muted, marginStart: 3 }}>{r.letter}</Text>
                 )}
               </View>
-              <Text style={font.tiny}>of {Math.round(r.target)}</Text>
+              <Text style={font.tiny}>מתוך {Math.round(r.target)}</Text>
             </View>
           );
         })}
@@ -152,10 +152,10 @@ export function ModeToggle({ value, onChange }: { value: NutritionMode; onChange
           <Pressable
             key={m}
             onPress={() => onChange(m)}
-            style={{ paddingVertical: 10, paddingHorizontal: 22, borderRadius: radius.pill, backgroundColor: active ? colors.black : 'transparent' }}
+            style={{ paddingVertical: 10, paddingHorizontal: 22, borderRadius: radius.pill, backgroundColor: active ? colors.primary : 'transparent' }}
           >
             <Text style={{ color: active ? '#fff' : colors.text, fontWeight: '600', fontSize: 14 }}>
-              {m === 'consumed' ? 'Consumed' : 'Remaining'}
+              {m === 'consumed' ? 'נאכל' : 'נשאר'}
             </Text>
           </Pressable>
         );

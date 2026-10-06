@@ -96,9 +96,9 @@ export default function NewFood() {
 
   async function scanLabel() {
     if (!(await hasApiKey())) {
-      Alert.alert('API key needed', 'Reading a label with AI needs your Anthropic API key.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Add API key', onPress: () => router.push('/more') },
+      Alert.alert('צריך מפתח Gemini', 'קריאת תווית עם AI צריכה מפתח Gemini (חינמי).', [
+        { text: 'ביטול', style: 'cancel' },
+        { text: 'להגדרות', onPress: () => router.push('/settings') },
       ]);
       return;
     }
@@ -108,13 +108,13 @@ export default function NewFood() {
     try {
       const label = await readNutritionLabel(res.assets[0], form.barcode.trim() || undefined);
       if (!label.readable) {
-        Alert.alert('Label not readable', 'Try again with better lighting and the whole table in frame.');
+        Alert.alert('לא הצלחתי לקרוא את התווית', 'נסו שוב עם תאורה טובה יותר וכל הטבלה בתוך התמונה.');
         return;
       }
       setForm((f) => ({ ...f, ...Object.fromEntries(Object.entries(fromLabel(label)).filter(([, v]) => v !== '')) }));
       setPrefilled(true);
     } catch (e) {
-      Alert.alert('AI error', describeAiError(e));
+      Alert.alert('שגיאת AI', describeAiError(e));
     } finally {
       setAiBusy(false);
     }
@@ -123,7 +123,7 @@ export default function NewFood() {
   async function save() {
     const kcal = parseNum(form.kcal);
     if (!form.name.trim() || kcal == null) {
-      Alert.alert('Missing info', 'Name and calories per 100 g are required.');
+      Alert.alert('חסרים פרטים', 'חובה למלא שם וקלוריות ל-100 ג׳.');
       return;
     }
     setBusy(true);
@@ -155,9 +155,9 @@ export default function NewFood() {
       if (barcode) {
         const dup = await getFoodByBarcode(barcode);
         if (dup) {
-          Alert.alert('Barcode exists', `"${dup.name}" already uses this barcode. Open it instead?`, [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Open', onPress: () => router.replace({ pathname: '/food/[id]', params: { id: String(dup.id), date: params.date, meal: params.meal } }) },
+          Alert.alert('הברקוד כבר קיים', `"${dup.name}" כבר משתמש בברקוד הזה. לפתוח אותו?`, [
+            { text: 'ביטול', style: 'cancel' },
+            { text: 'לפתוח', onPress: () => router.replace({ pathname: '/food/[id]', params: { id: String(dup.id), date: params.date, meal: params.meal } }) },
           ]);
           return;
         }
@@ -173,68 +173,68 @@ export default function NewFood() {
   return (
     <Screen>
       <Card>
-        <Field label="Name" value={form.name} onChangeText={set('name')} autoFocus={!prefilled} placeholder="e.g. Protein bar" />
-        <Field label="Brand (optional)" value={form.brand} onChangeText={set('brand')} />
-        <Field label="Barcode (optional)" value={form.barcode} onChangeText={set('barcode')} keyboardType="number-pad" />
+        <Field label="שם" value={form.name} onChangeText={set('name')} autoFocus={!prefilled} placeholder="למשל: חטיף חלבון" />
+        <Field label="מותג (לא חובה)" value={form.brand} onChangeText={set('brand')} />
+        <Field label="ברקוד (לא חובה)" value={form.barcode} onChangeText={set('barcode')} keyboardType="number-pad" />
         <Button
-          title="Photograph nutrition label"
+          title="צילום טבלת ערכים תזונתיים"
           variant="secondary"
           onPress={scanLabel}
           loading={aiBusy}
         />
         {prefilled ? (
           <Text style={[font.tiny, { marginTop: spacing.sm }]}>
-            Values were read by AI from the label. Double-check them before saving.
+            הערכים נקראו מהתווית על ידי AI. בדקו אותם לפני השמירה.
           </Text>
         ) : null}
       </Card>
 
       <Card>
-        <Text style={[font.h3, { marginBottom: spacing.sm }]}>Per 100 g</Text>
+        <Text style={[font.h3, { marginBottom: spacing.sm }]}>ל-100 ג׳</Text>
         <Row style={{ gap: spacing.sm }}>
           <View style={{ flex: 1 }}>
-            <Field label="Calories" value={form.kcal} onChangeText={set('kcal')} keyboardType="decimal-pad" suffix="kcal" />
+            <Field label="קלוריות" value={form.kcal} onChangeText={set('kcal')} keyboardType="decimal-pad" suffix="קק״ל" />
           </View>
           <View style={{ flex: 1 }}>
-            <Field label="Protein" value={form.protein} onChangeText={set('protein')} keyboardType="decimal-pad" suffix="g" />
+            <Field label="חלבון" value={form.protein} onChangeText={set('protein')} keyboardType="decimal-pad" suffix="ג׳" />
           </View>
         </Row>
         <Row style={{ gap: spacing.sm }}>
           <View style={{ flex: 1 }}>
-            <Field label="Carbs" value={form.carbs} onChangeText={set('carbs')} keyboardType="decimal-pad" suffix="g" />
+            <Field label="פחמימות" value={form.carbs} onChangeText={set('carbs')} keyboardType="decimal-pad" suffix="ג׳" />
           </View>
           <View style={{ flex: 1 }}>
-            <Field label="Fat" value={form.fat} onChangeText={set('fat')} keyboardType="decimal-pad" suffix="g" />
+            <Field label="שומן" value={form.fat} onChangeText={set('fat')} keyboardType="decimal-pad" suffix="ג׳" />
           </View>
         </Row>
         <Row style={{ gap: spacing.sm }}>
           <View style={{ flex: 1 }}>
-            <Field label="Fiber" value={form.fiber} onChangeText={set('fiber')} keyboardType="decimal-pad" suffix="g" />
+            <Field label="סיבים" value={form.fiber} onChangeText={set('fiber')} keyboardType="decimal-pad" suffix="ג׳" />
           </View>
           <View style={{ flex: 1 }}>
-            <Field label="Sugar" value={form.sugar} onChangeText={set('sugar')} keyboardType="decimal-pad" suffix="g" />
+            <Field label="סוכר" value={form.sugar} onChangeText={set('sugar')} keyboardType="decimal-pad" suffix="ג׳" />
           </View>
           <View style={{ flex: 1 }}>
-            <Field label="Sodium" value={form.sodium} onChangeText={set('sodium')} keyboardType="decimal-pad" suffix="mg" />
+            <Field label="נתרן" value={form.sodium} onChangeText={set('sodium')} keyboardType="decimal-pad" suffix="מ״ג" />
           </View>
         </Row>
       </Card>
 
       <Card>
-        <Text style={[font.h3, { marginBottom: spacing.sm }]}>Serving (optional)</Text>
+        <Text style={[font.h3, { marginBottom: spacing.sm }]}>מנה (לא חובה)</Text>
         <Row style={{ gap: spacing.sm }}>
           <View style={{ flex: 1 }}>
-            <Field label="Serving size" value={form.servingG} onChangeText={set('servingG')} keyboardType="decimal-pad" suffix="g" />
+            <Field label="גודל מנה" value={form.servingG} onChangeText={set('servingG')} keyboardType="decimal-pad" suffix="ג׳" />
           </View>
           <View style={{ flex: 2 }}>
-            <Field label="Serving name" value={form.servingName} onChangeText={set('servingName')} placeholder="1 bar" />
+            <Field label="שם המנה" value={form.servingName} onChangeText={set('servingName')} placeholder="חטיף אחד" />
           </View>
         </Row>
       </Card>
 
-      <Button title={editing ? 'Save changes' : 'Save food'} onPress={save} loading={busy} />
+      <Button title={editing ? 'שמירת שינויים' : 'שמירת המזון'} onPress={save} loading={busy} />
       <Text style={[font.tiny, { textAlign: 'center', marginTop: spacing.md, color: colors.muted }]}>
-        Foods with a barcode are found instantly next time you scan.
+        מזון עם ברקוד יימצא מיד בסריקה הבאה.
       </Text>
     </Screen>
   );

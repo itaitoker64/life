@@ -24,7 +24,7 @@ export default function ProgramUpdate() {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
         <ActivityIndicator size="large" color={colors.text} />
-        <Text style={[font.small, { marginTop: spacing.md }]}>Reviewing your week…</Text>
+        <Text style={[font.small, { marginTop: spacing.md }]}>בודק את השבוע שלך…</Text>
       </View>
     );
   }
@@ -51,28 +51,28 @@ export default function ProgramUpdate() {
   const changes: Array<{ icon: string; letter?: string; text: React.ReactNode }> = [];
   const line = (label: string, delta: number, unit: string) => (
     <Text style={[font.body, { lineHeight: 21 }]}>
-      Your average {label} will{' '}
+      ה{label} הממוצע{' '}
       <Text style={{ fontWeight: '700' }}>
-        {delta === 0 ? 'stay the same' : `${delta > 0 ? 'increase' : 'decrease'} by ${Math.abs(delta)} ${unit}`}
+        {delta === 0 ? 'יישאר ללא שינוי' : `${delta > 0 ? 'יעלה' : 'ירד'} ב-${Math.abs(delta)} ${unit}`}
       </Text>{' '}
-      {delta === 0 ? '' : 'for next week.'}
+      {delta === 0 ? '' : 'בשבוע הבא.'}
     </Text>
   );
-  changes.push({ icon: 'flame', text: line('Calories', deltas.calories, 'kcal') });
-  changes.push({ icon: 'P', letter: 'P', text: line('Protein', deltas.protein, 'g') });
-  changes.push({ icon: 'F', letter: 'F', text: line('Fat', deltas.fat, 'g') });
-  changes.push({ icon: 'C', letter: 'C', text: line('Carbs', deltas.carbs, 'g') });
+  changes.push({ icon: 'flame', text: line('קלוריות', deltas.calories, 'קק״ל') });
+  changes.push({ icon: 'P', letter: 'ח', text: line('חלבון', deltas.protein, 'ג׳') });
+  changes.push({ icon: 'F', letter: 'ש', text: line('שומן', deltas.fat, 'ג׳') });
+  changes.push({ icon: 'C', letter: 'פ', text: line('פחמימות', deltas.carbs, 'ג׳') });
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['bottom']}>
       <Screen padded={false} style={{ flex: 1 }}>
-        <View style={{ backgroundColor: colors.card, padding: spacing.lg }}>
-          <Text style={[font.h2, { marginBottom: spacing.md }]}>Upcoming Program</Text>
+        <View style={{ backgroundColor: colors.card, padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+          <Text style={[font.h2, { marginBottom: spacing.md }]}>התוכנית הבאה</Text>
           <MacroWeekGrid calories={next.calories} protein={next.protein} fat={next.fat} carbs={next.carbs} height={280} />
         </View>
 
         <View style={{ padding: spacing.lg }}>
-          <Text style={[font.h2, { marginBottom: spacing.md }]}>What changed?</Text>
+          <Text style={[font.h2, { marginBottom: spacing.md }]}>מה השתנה?</Text>
           <Card>
             {changes.map((c, i) => (
               <View key={i} style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center', paddingVertical: 10 }}>
@@ -97,31 +97,31 @@ export default function ProgramUpdate() {
             ))}
           </Card>
 
-          <Text style={[font.h2, { marginTop: spacing.lg, marginBottom: spacing.md }]}>Why</Text>
+          <Text style={[font.h2, { marginTop: spacing.lg, marginBottom: spacing.md }]}>למה</Text>
           <Card>
             <Reason
-              label="Expenditure"
-              value={`${tdee} kcal / day`}
-              desc={`Re-estimated from your weight trend and the ${loggedDays} day${loggedDays === 1 ? '' : 's'} you logged in the last three weeks.`}
+              label="הוצאה קלורית"
+              value={`${tdee} קק״ל ליום`}
+              desc={`הוערכה מחדש ממגמת המשקל ומ-${loggedDays} הימים שרשמת בשלושת השבועות האחרונים.`}
             />
             <Reason
-              label="Observed change"
+              label="שינוי בפועל"
               value={
                 observedWeeklyKg != null
-                  ? `${observedWeeklyKg >= 0 ? '+' : '−'}${Math.abs(kgToDisplay(observedWeeklyKg, units)).toFixed(2)} ${wl} / week`
-                  : 'Not enough data'
+                  ? `${observedWeeklyKg >= 0 ? '+' : '−'}${Math.abs(kgToDisplay(observedWeeklyKg, units)).toFixed(2)} ${wl} לשבוע`
+                  : 'אין מספיק נתונים'
               }
-              desc="Your actual rate of change over the past three weeks, from trend weight."
+              desc="קצב השינוי בפועל בשלושת השבועות האחרונים, לפי מגמת המשקל."
             />
             <Reason
-              label="New target"
-              value={`${next.calories} kcal / day`}
-              desc="Expenditure plus the deficit or surplus your goal rate needs, then smoothed so targets move gradually instead of tracking every weekly wobble."
+              label="יעד חדש"
+              value={`${next.calories} קק״ל ליום`}
+              desc="ההוצאה ועוד הגירעון או העודף שהמטרה דורשת, מוחלק כך שהיעדים זזים בהדרגה ולא עוקבים אחרי כל תנודה שבועית."
               last
             />
             {loggedDays < 7 ? (
               <Text style={[font.tiny, { marginTop: spacing.md, color: colors.warning }]}>
-                Fewer than 7 fully logged days, so the expenditure estimate barely moved. Log more days for a sharper program.
+                פחות מ-7 ימים מלאים, ולכן ההערכה כמעט לא זזה. רישום של יותר ימים ייתן תוכנית מדויקת יותר.
               </Text>
             ) : null}
           </Card>
@@ -133,14 +133,14 @@ export default function ProgramUpdate() {
           onPress={decline}
           disabled={busy}
           style={({ pressed }) => ({
-            backgroundColor: colors.track,
+            backgroundColor: colors.elev2,
             borderRadius: radius.md,
             paddingVertical: 16,
             alignItems: 'center',
             opacity: pressed || busy ? 0.6 : 1,
           })}
         >
-          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>Decline and Silence</Text>
+          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>לדחות</Text>
         </Pressable>
         <Pressable
           onPress={accept}
@@ -154,7 +154,7 @@ export default function ProgramUpdate() {
             ...shadow,
           })}
         >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>Accept Program Changes</Text>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>לאשר את השינויים</Text>
         </Pressable>
       </View>
     </SafeAreaView>

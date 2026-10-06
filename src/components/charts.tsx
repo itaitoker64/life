@@ -52,7 +52,7 @@ export function MacroBar({
   value,
   max,
   color,
-  unit = 'g',
+  unit = 'ג׳',
 }: {
   label: string;
   value: number;
@@ -69,7 +69,7 @@ export function MacroBar({
         <RNText style={font.small}>
           <RNText style={{ color: colors.text, fontWeight: '700' }}>{Math.round(value)}</RNText> / {Math.round(max)} {unit}
           {'  '}
-          <RNText style={{ color: left < 0 ? colors.danger : colors.faint }}>{left < 0 ? `${-left} over` : `${left} left`}</RNText>
+          <RNText style={{ color: left < 0 ? colors.danger : colors.faint }}>{left < 0 ? `${-left} מעל` : `נשארו ${left}`}</RNText>
         </RNText>
       </View>
       <View style={{ height: 8, backgroundColor: colors.track, borderRadius: 4, overflow: 'hidden' }}>
@@ -160,7 +160,7 @@ export function TrendChart({
     <Svg width={width} height={height}>
       {ticks.map((t, i) => (
         <React.Fragment key={i}>
-          <Line x1={pad.l} x2={width - pad.r + 4} y1={sy(t)} y2={sy(t)} stroke={colors.faint} strokeWidth={1} strokeDasharray="4 4" />
+          <Line x1={pad.l} x2={width - pad.r + 4} y1={sy(t)} y2={sy(t)} stroke={colors.border} strokeWidth={1} strokeDasharray="4 4" />
           <SvgText x={width - pad.r + 10} y={sy(t) + 4} fontSize={13} fill={colors.muted}>
             {t.toFixed(decimals)}
           </SvgText>
@@ -172,9 +172,9 @@ export function TrendChart({
       {showMarkers &&
         points.map((p, i) =>
           p.trend == null ? null : holdingLast && i === lastIdx ? (
-            <Rect key={i} x={sx(i) - 4} y={sy(p.trend) - 4} width={8} height={8} fill="#fff" stroke={color} strokeWidth={2} />
+            <Rect key={i} x={sx(i) - 4} y={sy(p.trend) - 4} width={8} height={8} fill={colors.card} stroke={color} strokeWidth={2} />
           ) : (
-            <Circle key={i} cx={sx(i)} cy={sy(p.trend)} r={compact ? 3 : 4.5} fill="#fff" stroke={color} strokeWidth={2} />
+            <Circle key={i} cx={sx(i)} cy={sy(p.trend)} r={compact ? 3 : 4.5} fill={colors.card} stroke={color} strokeWidth={2} />
           ),
         )}
       {!compact &&
