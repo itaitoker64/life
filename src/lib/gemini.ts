@@ -6,6 +6,9 @@ import { getApiKey } from './secrets';
 // Same models Stride used: newest flash first, then the rolling alias.
 export const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-flash-latest'];
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
+// Google Cloud "express mode" keys (AQ.…) only work against Vertex AI, which serves the same models.
+const VERTEX_ENDPOINT = 'https://aiplatform.googleapis.com/v1/publishers/google/models';
+const endpointFor = (key: string) => (key.startsWith('AQ.') ? VERTEX_ENDPOINT : ENDPOINT);
 
 export class MissingApiKeyError extends Error {
   constructor() {
@@ -79,7 +82,7 @@ export async function generateJson<T extends z.ZodType>(opts: {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 30000);
       try {
-        res = await fetch(`${ENDPOINT}/${model}:generateContent`, {
+        res = await fetch(`${endpointFor(apiKey)}/${model}:generateContent`, {
           method: 'POST',
           signal: controller.signal,
           headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
@@ -155,4 +158,19 @@ export function describeGeminiError(err: unknown): string {
   }
   if (err instanceof Error) return err.message;
   return 'משהו השתבש.';
+}
+
+/** Quick check right after the key is saved: 'ok', 'invalid', or 'offline'. */
+export async function checkApiKey(apiKey: string): Promise<'ok' | 'invalid' | 'offline'> {
+  try {
+    const res = await fetch(`${endpointFor(apiKey)}/${GEMINI_MODELS[GEMINI_MODELS.length - 1]}:generateContent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'ping' }] }], generationConfig: { maxOutputTokens: 1 } }),
+    });
+    if (res.ok || res.status === 429 || res.status === 503) return 'ok';
+    return 'invalid';
+  } catch {
+    return 'offline';
+  }
 }

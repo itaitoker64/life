@@ -19,12 +19,16 @@ const ICU_ATHLETE = 'intervals_athlete_id';
 // Keys pasted from Hebrew text / Word often carry invisible direction marks or spaces; Android's
 // HTTP client then rejects the request header outright. Keep only characters a key can contain.
 export function cleanKey(key: string): string {
-  return key.replace(/[^A-Za-z0-9_\-]/g, '');
+  // Letters, digits, '_', '-' and '.' (Vertex express keys look like "AQ.Ab8…").
+  return key.replace(/[^A-Za-z0-9_.\-]/g, '');
 }
 
 export async function getApiKey(): Promise<string | null> {
-  const k = await SecureStore.getItemAsync(GEMINI_KEY);
-  return k ? cleanKey(k) || null : null;
+  const raw = await SecureStore.getItemAsync(GEMINI_KEY);
+  let k = raw ? cleanKey(raw) : '';
+  // An earlier version stripped the dot from Vertex keys ("AQ.Ab8…" → "AQAb8…"); put it back.
+  if (/^AQ[^.]/.test(k)) k = `AQ.${k.slice(2)}`;
+  return k || null;
 }
 
 export function setApiKey(key: string): Promise<void> {

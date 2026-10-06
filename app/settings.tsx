@@ -7,6 +7,7 @@ import { Button, Card, Divider, Field, ListRow, Screen, SectionTitle, Segmented,
 import { getDb } from '../src/db';
 import { clearCollection } from '../src/db/docs';
 import { aiUsageSummary } from '../src/db/usage';
+import { checkApiKey } from '../src/lib/gemini';
 import { applyTargets, updateExpenditureIfNeeded } from '../src/lib/coach';
 import {
   clearApiKey,
@@ -73,7 +74,11 @@ export default function Settings() {
     const stored = await getApiKey();
     setKey('');
     setHasKey(!!stored);
-    toast(stored ? 'המפתח נשמר בטלפון' : 'לא הצלחתי לשמור את המפתח');
+    if (!stored) return toast('לא הצלחתי לשמור את המפתח');
+    const check = await checkApiKey(stored);
+    if (check === 'ok') toast('המפתח נשמר ונבדק — עובד ✓');
+    else if (check === 'offline') toast('המפתח נשמר. לא הייתה רשת לבדיקה.');
+    else Alert.alert('Google דחה את המפתח', 'המפתח נשמר, אבל Google אומר שהוא לא תקין. צרו מפתח חדש ב-aistudio.google.com/apikey (כפתור Create API key), העתיקו עם כפתור ההעתקה והדביקו שוב.');
   }
 
   async function saveIcu() {
