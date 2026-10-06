@@ -67,7 +67,7 @@ export function sessions(exId: string, sinceDays?: number): Session[] {
   const since = sinceDays ? Date.now() - sinceDays * DAY : 0;
   const out: Session[] = [];
   for (const w of workouts()) {
-    if (w.deload || w.startedAt < since) continue;
+    if (w.deload || w.equipmentAdjusted || w.trainingKind && w.trainingKind !== 'strength' || w.startedAt < since) continue;
     const it = (w.items || []).find((x) => x.exerciseId === exId);
     if (!it) continue;
     const sets = workingSets(it);

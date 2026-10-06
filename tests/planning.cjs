@@ -229,3 +229,222 @@ test('resuming a recovery workout does not restore the intentionally removed set
   workout.resumeFinished({ id: 'recovery', name: 'Recovery', routineId: 'legs', startedAt: Date.now(), durationSec: 1200, deload: true, items: [{ exerciseId: 'squat', sets: [{ type: 'normal', weight: 90, reps: 6 }] }] });
   assert.equal(state.active.items[0].sets.length, 1); assert.equal(state.active.adaptationDeload, true);
 });
+
+// The combined plan coordinates frequency without rewriting the existing run coach.
+const combined = load('src/training/combined.ts');
+const equipment = load('src/training/equipment.ts');
+const library = loader({ './images': { EXERCISE_IMAGES: {} } })('src/strength/seed.ts').builtinExercises();
+const hybrid = extra => ({ enabled: true, startDate: '2026-10-04', level: 'returning', slots: [...combined.DEFAULT_SLOTS], routineIds: ['a','b'], ...extra });
+const coachPlan = extra => ({ id: '2026-10-05', plan_date: '2026-10-05', workout_type: 'intervals', title: 'Intervals', status: 'planned', duration_min: 50, target_pace_fast_sec_km: 240, target_pace_slow_sec_km: 260, ...extra });
+const exNamed = name => library.find(ex => ex.name === name);
+const routineItem = (name, count = 3) => ({ exerciseId: exNamed(name).id, restSec: 120, notes: 'Original', repMin: 8, repMax: 12, sets: Array.from({ length: count }, () => ({ type: 'normal', weight: 100, reps: 10 })) });
+const gym = (...keys) => ({ ...equipment.emptyInventory(), equipment: keys });
+
+test('the starting split has two full-body days, two easy runs, one CrossFit and two rests', () => {
+  assert.deepEqual(combined.validateProgram(hybrid()), []);
+  const data = emptyPlanning(); data.combinedProgram = hybrid();
+  data.rules = [rule({ id: 'a', weekday: 0, routineId: 'a' }), rule({ id: 'b', weekday: 4, routineId: 'b' }), rule({ id: 'cf', weekday: 2, kind: 'crossfit', routineId: 'cf' })];
+  const plans = plannedSessions(data, [], '2026-10-04', '2026-10-10');
+  assert.deepEqual(plans.map(p => p.kind), ['strength','run','crossfit','strength','run']);
+  assert.deepEqual(plans.filter(p => p.kind === 'run').map(p => p.minutes), [25,25]);
+});
+test('the split rejects adjacent hard days including Saturday to Sunday', () => {
+  assert.ok(combined.validateProgram(hybrid({ slots: ['strength','crossfit','run','rest','strength','run','rest'] })).length);
+  assert.ok(combined.validateProgram(hybrid({ slots: ['strength','run','rest','run','strength','rest','crossfit'] })).length);
+});
+test('easy hybrid runs never inherit an interval pace or invent distance; races are preserved', () => {
+  const baseline = coachPlan(); const effective = combined.combinedRunPlan(hybrid(), baseline);
+  assert.equal(effective.workout_type, 'easy'); assert.equal(effective.target_pace_fast_sec_km, null);
+  assert.equal(effective.distance_km, null); assert.equal(effective.duration_min, 25);
+  assert.equal(baseline.workout_type, 'intervals'); assert.equal(baseline.duration_min, 50);
+  const race = coachPlan({ plan_date: '2026-10-06', workout_type: 'race' });
+  assert.equal(combined.combinedRunPlan(hybrid(), race), race);
+  assert.equal(combined.combinedRunPlan(hybrid(), coachPlan({ plan_date: '2026-10-06' })).workout_type, 'rest');
+});
+test('changing or disabling the split does not rewrite earlier weeks', () => {
+  const initial = hybrid(); const disabled = hybrid({ enabled: false, startDate: '2026-10-11' });
+  assert.equal(combined.combinedRunPlan(disabled, coachPlan(), [initial]).duration_min, 25);
+  assert.equal(combined.combinedRunPlan(disabled, coachPlan({ plan_date: '2026-10-12' }), [initial]).duration_min, 50);
+  assert.equal(combined.combinedRunPlan(initial, coachPlan({ plan_date: '2026-10-03' })).duration_min, 50);
+});
+test('explicitly moved runs remain visible when the combined split changes their original day', () => {
+  const data = emptyPlanning(); data.combinedProgram = hybrid();
+  data.overrides = [{ id: 'coach:2026-10-06', originalDate: '2026-10-06', date: '2026-10-07' }];
+  const plans = plannedSessions(data, [coachPlan({ id: '2026-10-06', plan_date: '2026-10-06' })], '2026-10-07', '2026-10-07');
+  assert.equal(plans[0].id, 'coach:2026-10-06'); assert.equal(plans[0].manual, true);
+});
+test('full-body templates are usable with the real library and never copy bundled weights', () => {
+  for (const variant of [0,1]) {
+    const items = combined.fullBodyItems(library, variant, 'returning');
+    assert.equal(items.length, 5); assert.ok(items.every(i => i.sets.length === 2));
+    assert.ok(items.every(i => i.sets.every(s => s.weight === '')));
+  }
+  assert.equal(combined.crossfitItems(library, 'regular').length, 4);
+});
+test('equipment recognition cannot imply other machines, overhead clearance or floor space', () => {
+  const available = gym('leg_press','dumbbells','bench','cable_high');
+  assert.equal(equipment.exerciseAvailable(exNamed('Leg Press'), available), true);
+  assert.equal(equipment.exerciseAvailable(exNamed('Chest Press Machine'), available), false);
+  assert.equal(equipment.exerciseAvailable(exNamed('Seated Leg Curl'), available), false);
+  assert.equal(equipment.exerciseAvailable(exNamed('Push-Up'), available), false);
+  assert.equal(equipment.exerciseAvailable(exNamed('Seated Dumbbell Press'), { ...available, noOverhead: true }), false);
+  assert.equal(equipment.exerciseAvailable(exNamed('Lat Pulldown'), { ...available, noOverhead: true }), false);
+  assert.equal(equipment.exerciseAvailable(exNamed('Walking Lunge'), { ...gym('dumbbells','open_space'), smallSpace: true }), false);
+  assert.equal(equipment.exerciseAvailable(exNamed('Crunch'), { ...gym('floor_space'), noFloor: true }), false);
+  assert.equal(equipment.exerciseAvailable(exNamed('Dumbbell Bench Press'), gym('dumbbells','adjustable_bench')), true);
+});
+test('substitution preserves movement families and never invents a substitute for an unknown custom exercise', () => {
+  const source = [routineItem('Leg Press'), routineItem('Chest Press Machine'), routineItem('Romanian Deadlift'), routineItem('Lat Pulldown')];
+  const before = JSON.stringify(source);
+  const result = equipment.tailorWorkout(source, library, gym('dumbbells','bench'), 'strength', 60);
+  assert.equal(result.rows.length, 3); assert.equal(result.omitted.length, 1);
+  assert.equal(result.rows[1].exerciseId, exNamed('Dumbbell Bench Press').id);
+  assert.equal(result.rows[2].exerciseId, exNamed('Dumbbell Romanian Deadlift').id);
+  assert.ok(result.rows.every(row => row.item.sets.every(set => set.weight === '' && set.type === 'normal')));
+  assert.equal(JSON.stringify(source), before);
+  const unknown = { ...exNamed('Leg Press'), id: 'custom', name: 'Unverified machine', isCustom: true };
+  assert.equal(equipment.substituteExercise(unknown, [unknown, ...library], gym('leg_press'), new Set()), undefined);
+});
+test('same-name unfamiliar machines also start with blank weights and warm-ups are not counted as work', () => {
+  const source = routineItem('Leg Press'); source.sets.unshift({ type: 'warmup', weight: 40, reps: 5 });
+  const result = equipment.tailorWorkout([source], library, gym('leg_press'), 'strength', 45);
+  assert.equal(result.rows[0].changed, false); assert.equal(result.rows[0].item.sets.length, 3);
+  assert.ok(result.rows[0].item.sets.every(s => s.weight === ''));
+});
+test('time-limited adaptation removes work visibly and does not add sets to compensate', () => {
+  const source = ['Leg Press','Dumbbell Bench Press','Lat Pulldown','Romanian Deadlift','Crunch'].map(name => routineItem(name));
+  const inventory = gym('leg_press','dumbbells','bench','cable_high','barbell','floor_space');
+  const short = equipment.tailorWorkout(source, library, inventory, 'strength', 15);
+  const long = equipment.tailorWorkout(source, library, inventory, 'strength', 60);
+  assert.ok(short.omitted.some(s => s.includes('מסגרת הזמן')));
+  assert.ok(short.rows.reduce((n,r) => n + r.item.sets.length,0) < long.rows.reduce((n,r) => n + r.item.sets.length,0));
+  assert.ok(long.rows.every(r => r.item.sets.length <= 3));
+});
+test('a gym run prefers the treadmill, cycling preserves minutes without inventing kilometres', () => {
+  const result = equipment.tailorWorkout([], [...library].reverse(), gym('bike','treadmill'), 'run', 25);
+  assert.equal(result.rows[0].exerciseId, exNamed('Treadmill').id);
+  const cycling = equipment.tailorWorkout([], library, gym('bike'), 'run', 25);
+  assert.equal(cycling.rows[0].exerciseId, exNamed('Stationary Bike').id);
+  assert.equal(cycling.rows[0].item.sets[0].weight, 25); assert.equal(cycling.rows[0].item.sets[0].reps, '');
+  assert.ok(cycling.rows[0].reason.includes('אינו נספר'));
+  assert.equal(equipment.tailorWorkout([], library, gym('dumbbells'), 'run', 25).rows.length, 0);
+});
+test('controlled CrossFit allows easy next-day aerobic work while very hard or accumulated load prompts recovery', () => {
+  const easy = next({ kind: 'run', plannedEffort: 4, routineId: undefined });
+  const regular = context({ loads: [{ id: 'cf', date: '2026-10-06', title: 'CF', kind: 'crossfit', effort: 7, minutes: 45, areas: ['legs'] }] });
+  assert.equal(adaptSessions([easy], regular, [])[0].adjustment, undefined);
+  assert.ok(adaptSessions([easy], { ...regular, loads: [{ ...regular.loads[0], effort: 9 }] }, [])[0].adjustment);
+  const accumulated = { ...regular, loads: [regular.loads[0], { ...regular.loads[0], id: 'second', minutes: 45 }] };
+  assert.ok(adaptSessions([easy], accumulated, [])[0].adjustment);
+});
+test('a saved spontaneous workout replaces its source once even when its training kind differs', () => {
+  const plan = next({ date: '2026-10-06', kind: 'run', routineId: undefined });
+  const load = { id: 'lift:cf', date: '2026-10-06', title: 'CF', kind: 'crossfit', replacementId: plan.id, minutes: 45, effort: 9, areas: ['legs'] };
+  assert.equal(adaptSessions([plan], context({ loads: [load] }), [])[0].adjustment, undefined);
+  const data = emptyPlanning(); data.workoutDrafts = [{ id: 'draft', kind: 'crossfit' }];
+  assert.equal(completedSessions([], [], data).length, 0);
+  const done = completedSessions([{ id: 'cf', name: 'CF', startedAt: new Date('2026-10-06T10:00:00Z').getTime(), durationSec: 1800, trainingKind: 'crossfit', plannedSessionId: plan.id, equipmentAdjusted: true }], [], data);
+  assert.equal(matchSessions([plan, { ...plan, id: 'duplicate' }], done).size, 1);
+  assert.equal(matchSessions([plan], done).get(plan.id), 'lift:cf');
+  assert.equal(done[0].kind, 'crossfit'); assert.equal(done[0].km, 0); assert.equal(done[0].minutes, 30);
+});
+test('gym-photo parsing rejects unknown equipment; uncertain observations require manual confirmation', async () => {
+  let sent; const resized = [];
+  const scoped = loader({ 'expo-image-manipulator': { SaveFormat: { JPEG: 'jpeg' }, ImageManipulator: { manipulate: () => ({ resize: value => resized.push(value), renderAsync: async () => ({ saveAsync: async () => ({ base64: 'image' }) }) }) } }, '../lib/gemini': { generateJson: async options => { sent = options; return { data: { observations: [{ equipment: 'bike', confidence: 'high', evidence: 'Visible bike' }, { equipment: 'leg_press', confidence: 'low', evidence: 'Unclear' }, { equipment: 'bike', confidence: 'high', evidence: 'Second angle' }], notes: '' }, usage: { model: 'test', input: 1, output: 1 } }; } }, '../db/usage': { recordAiUsage: async () => {} } });
+  const vision = scoped('src/training/vision.ts');
+  await assert.rejects(vision.inspectGym([])); await assert.rejects(vision.inspectGym(Array(4).fill({ uri: 'image' })));
+  const result = await vision.inspectGym([{ uri: 'image', width: 2000, height: 1000 }]);
+  assert.deepEqual(resized, [{ width: 1280 }]); assert.equal(sent.parts.length, 1);
+  assert.deepEqual(vision.clearlyVisibleEquipment(result.observations), ['bike']);
+  assert.equal(vision.GymVisionSchema.safeParse({ observations: [{ equipment: 'imaginary_machine', confidence: 'high', evidence: '' }], notes: '' }).success, false);
+});
+test('starting and resuming a gym-adjusted workout keeps its snapshot and protects the original routine', () => {
+  const state = { active: null, exercises: library }; let updated = 0;
+  const original = { id: 'a', items: [routineItem('Leg Press')] };
+  const source = { id: 'source', minutes: 35, adjustment: { mode: 'reduce', key: 'recovery', factor: 0.7 } };
+  const scoped = loader({ 'expo-notifications': {}, '../run/store': { R: { plans: [] } }, '../planning/store': { usePlanning: { getState: () => ({ data: {} }) } }, '../planning/model': { plannedSessions: () => [source] }, './coach': {}, './store': { L: state, routine: () => original, defaultRepRange: () => ({ min: 8, max: 12 }), persist: { active: () => {} }, emit: () => {}, saveRoutine: () => updated++ } });
+  const workout = scoped('src/strength/workout.ts');
+  const row = equipment.tailorWorkout([routineItem('Leg Press')], library, gym('dumbbells'), 'strength', 45).rows[0];
+  const draft = { title: 'Gym', kind: 'strength', sourceSessionId: 'source', sourceRoutineId: 'a', instructions: 'New equipment', rows: [row] };
+  workout.startSpontaneousWorkout(draft);
+  assert.equal(state.active.equipmentAdjusted, true); assert.equal(state.active.plannedSessionId, 'source');
+  assert.equal(state.active.items[0].sets.length, 2); assert.ok(state.active.items[0].sets.every(s => s.weight === '' && !s.done));
+  workout.updateRoutineFromWorkout(state.active); assert.equal(updated, 0);
+  workout.startSpontaneousWorkout({ ...draft, rows: [{ ...row, item: { ...row.item, sets: row.item.sets.slice(0,2) } }], appliedAdjustmentKey: 'recovery' });
+  assert.equal(state.active.items[0].sets.length, 2); // not reduced twice
+  workout.resumeFinished({ id: 'adjusted', name: 'Gym', startedAt: Date.now(), routineId: 'a', durationSec: 600, equipmentAdjusted: true, trainingKind: 'strength', plannedSessionId: 'source', items: [{ ...row.item, sets: [{ type: 'normal', weight: 20, reps: 10 }] }] });
+  assert.equal(state.active.items[0].exerciseId, row.exerciseId); assert.equal(state.active.items[0].sets.length, 1);
+  assert.equal(state.active.plannedSessionId, 'source'); assert.equal(original.items[0].sets.length, 3);
+});
+test('an easy cardio substitute honours recovery by shortening duration, not just reducing a single set', () => {
+  const state = { active: null, exercises: library };
+  const scoped = loader({ 'expo-notifications': {}, '../run/store': { R: { plans: [] } }, '../planning/store': { usePlanning: { getState: () => ({ data: {} }) } }, '../planning/model': { plannedSessions: () => [{ id: 'source', minutes: 35, adjustment: { mode: 'reduce', key: 'r', factor: 0.7 } }] }, './coach': {}, './store': { L: state, persist: { active: () => {} }, emit: () => {} } });
+  const workout = scoped('src/strength/workout.ts');
+  const result = equipment.tailorWorkout([], library, gym('bike'), 'run', 35);
+  workout.startSpontaneousWorkout({ title: 'Bike', kind: 'run', sourceSessionId: 'source', minutes: 35, instructions: '', rows: result.rows });
+  assert.equal(state.active.items[0].sets[0].weight, 24.5); assert.equal(state.active.items[0].sets[0].reps, '');
+});
+test('synthetic run details can be completed and reload without generating a second plan', () => {
+  const data = emptyPlanning(); data.combinedProgram = hybrid(); let saved;
+  const scoped = loader({ '../db/docs': { saveDoc: async (_c, _id, value) => { saved = { ...value }; } }, '../lib/gemini': {}, '../lib/secrets': {}, './load': {}, './planner': {}, './science': {}, '../planning/store': { usePlanning: { getState: () => ({ data }) } } });
+  const run = scoped('src/run/store.ts');
+  const plan = run.planFor('2026-10-09'); assert.equal(plan.duration_min, 25);
+  run.setPlanStatus(plan, 'completed');
+  assert.equal(saved.status, 'completed'); assert.equal(run.planFor('2026-10-09').status, 'completed');
+  assert.equal(plannedSessions(data, run.R.plans, '2026-10-09', '2026-10-09').length, 1);
+  run.R.plans = [coachPlan({ id: '2026-10-06', plan_date: '2026-10-06' })];
+  data.overrides = [{ id: 'coach:2026-10-06', originalDate: '2026-10-06', date: '2026-10-07' }];
+  assert.equal(run.planFor('2026-10-07').workout_type, 'intervals');
+});
+test('unfamiliar equipment and CrossFit history cannot set future strength weights or machine records', () => {
+  const scoped = loader({ '../db/docs': {}, '../state/store': {}, './seed': { DEFAULT_REP_RANGE: { min: 8, max: 12 } } });
+  const store = scoped('src/strength/store.ts');
+  const completed = (id, extra) => ({ id, startedAt: Date.now(), items: [{ exerciseId: 'press', sets: [{ type: 'normal', weight: 500, reps: 10, done: true }] }], ...extra });
+  store.L.workouts = [completed('gym', { equipmentAdjusted: true }), completed('cf', { trainingKind: 'crossfit' }), completed('normal', { items: [{ exerciseId: 'press', sets: [{ type: 'normal', weight: 40, reps: 10, done: true }] }] })];
+  assert.equal(store.lastPerformance('press').sets[0].weight, 40);
+  assert.equal(store.exerciseBests('press').weight, 40);
+  const coaching = loader({ './store': { workouts: () => store.L.workouts, setGroup: () => 'work' } })('src/strength/coach.ts');
+  assert.deepEqual(coaching.sessions('press').map(s => s.workoutId), ['normal']);
+});
+test('saving a tailored workout preserves its source credit and type; strength goals exclude CrossFit', () => {
+  const state = { active: null, settings: {}, workouts: [] }; let committed;
+  const scoped = loader({ 'expo-notifications': {}, '../run/store': { R: { plans: [] } }, '../planning/store': { usePlanning: { getState: () => ({ data: { combinedProgram: hybrid() } }) } }, '../planning/model': {}, './coach': { deloadActive: () => false }, './store': { L: state, persist: { active: () => {} }, emit: () => {}, commitWorkout: value => { committed = value; state.workouts.push(value); } } });
+  const workout = scoped('src/strength/workout.ts');
+  const active = { id: 'cf', name: 'CF', startedAt: Date.now() - 600000, items: [{ exerciseId: 'squat', sets: [{ type: 'normal', weight: 10, reps: 10, done: true }] }], equipmentAdjusted: true, trainingKind: 'crossfit', plannedSessionId: 'weekly:cf:2026-10-06', adaptationNotes: 'Snapshot' };
+  const record = workout.saveWorkout(active);
+  assert.equal(record, committed); assert.equal(record.trainingKind, 'crossfit'); assert.equal(record.plannedSessionId, active.plannedSessionId);
+  assert.equal(record.equipmentAdjusted, true); assert.deepEqual(record.prs, []);
+  assert.equal(workout.workoutsThisWeek(), 0); assert.equal(workout.weeklyGoal(), 2);
+});
+test('fixed CrossFit classes stay on their chosen weekday and receive a visible recovery alternative', () => {
+  const fixed = next({ kind: 'crossfit', fixedDay: true });
+  const result = adaptSessions([fixed], context(), [])[0];
+  assert.equal(result.date, fixed.date); assert.equal(result.adjustment.mode, 'reduce');
+  assert.ok(result.adjustment.reason.includes('יום אימון קבוע')); assert.ok(result.adjustment.reason.includes('סבב טכני'));
+  const data = emptyPlanning(); data.rules = [rule({ weekday: 2, kind: 'crossfit' })];
+  assert.equal(plannedSessions(data, [], '2026-10-06', '2026-10-06')[0].fixedDay, true);
+});
+test('confirmed kettlebells and bands provide movement-matched alternatives without assuming a bench', () => {
+  const source = [routineItem('Romanian Deadlift'), routineItem('Seated Cable Row')];
+  const kettle = equipment.tailorWorkout(source, library, gym('kettlebell'), 'strength', 45);
+  assert.deepEqual(kettle.rows.map(r => exNamed('Kettlebell Deadlift').id === r.exerciseId ? 'hinge' : exNamed('Kettlebell Row').id === r.exerciseId ? 'row' : 'unknown'), ['hinge','row']);
+  const bands = equipment.tailorWorkout(source, library, gym('bands'), 'strength', 45);
+  assert.equal(bands.rows.length, 2); assert.equal(bands.omitted.length, 0);
+  assert.ok(bands.rows.every(r => r.item.sets.every(s => s.weight === '')));
+});
+test('CrossFit cardio and gym substitutions use logger minutes rather than the distance field', () => {
+  const source = combined.crossfitItems(library, 'returning');
+  const cardio = source.find(i => i.exerciseId === exNamed('Stationary Bike').id);
+  assert.ok(cardio.sets.every(s => s.weight === 2 && s.reps === ''));
+  const tailored = equipment.tailorWorkout(source, library, gym('dumbbells','bench','floor_space','bike'), 'crossfit', 30);
+  const row = tailored.rows.find(i => i.exerciseId === cardio.exerciseId);
+  assert.equal(row.item.sets[0].weight, 2); assert.equal(row.item.sets[0].reps, '');
+  assert.ok(tailored.rows.every(r => r.item.superset === 'spontaneous-circuit'));
+  const state = { active: null, exercises: library };
+  const scoped = loader({ 'expo-notifications': {}, '../run/store': { R: { plans: [] } }, '../planning/store': {}, '../planning/model': {}, './coach': {}, './store': { L: state, persist: { active: () => {} }, emit: () => {} } });
+  const workout = scoped('src/strength/workout.ts');
+  workout.startSpontaneousWorkout({ title: 'CF', kind: 'crossfit', instructions: '', rows: tailored.rows });
+  const live = state.active.items.find(i => i.exerciseId === cardio.exerciseId);
+  assert.equal(live.sets[0].weight, 2); assert.equal(live.sets[0].reps, '');
+  assert.ok(state.active.items.every(i => i.superset === 'spontaneous-circuit'));
+});

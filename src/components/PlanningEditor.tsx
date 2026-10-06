@@ -24,10 +24,10 @@ export function PlanningEditor({ date, onClose }: { date: string; onClose: () =>
   async function save() {
     if (!validDate(selectedDate) || selectedDate < today()) return Alert.alert('תאריך לא תקין', 'בחרו היום או תאריך עתידי בפורמט YYYY-MM-DD.');
     if (kind === 'strength' && !routine) return Alert.alert('בחרו רוטינה', 'צרו רוטינה בלשונית כוח ואז שובו לתכנון.');
-    if (kind === 'run' && !title.trim()) return Alert.alert('חסר שם', 'הוסיפו שם לאימון הריצה.');
+    if (kind !== 'strength' && !title.trim()) return Alert.alert('חסר שם', 'הוסיפו שם לאימון.');
     setBusy(true);
     try {
-      const base = { id: uid(), kind, title: kind === 'strength' ? routine!.name : title.trim(), routineId: kind === 'strength' ? routineId : undefined };
+      const base = { id: uid(), kind, title: kind === 'strength' ? routine!.name : title.trim(), routineId: kind === 'strength' ? routineId : undefined, plannedEffort: kind === 'crossfit' ? 7 : undefined };
       await updatePlanning(d => mode === 'weekly'
         ? { ...d, rules: [...d.rules, { ...base, weekday: Number(weekday), startDate: selectedDate }] }
         : { ...d, sessions: [...d.sessions, { ...base, date: selectedDate }] });
@@ -49,15 +49,15 @@ export function PlanningEditor({ date, onClose }: { date: string; onClose: () =>
   }
   return <Sheet visible onClose={onClose} title="תכנון אימונים">
     <Segmented options={[{ value: 'weekly', label: 'כל שבוע' }, { value: 'once', label: 'חד־פעמי' }]} value={mode} onChange={setMode} />
-    <Segmented options={[{ value: 'strength', label: 'כוח' }, { value: 'run', label: 'ריצה' }]} value={kind} onChange={setKind} />
+    <Segmented options={[{ value: 'strength', label: 'כוח' }, { value: 'run', label: 'ריצה' }, { value: 'crossfit', label: 'קרוספיט' }]} value={kind} onChange={value => { setKind(value); if (title === 'ריצה' || title === 'קרוספיט') setTitle(value === 'crossfit' ? 'קרוספיט' : 'ריצה'); }} />
     {mode === 'weekly' ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>{weekdays.map((day, i) => <Button key={day} title={day} size="sm" variant={weekday === String(i) ? 'primary' : 'secondary'} onPress={() => setWeekday(String(i))} />)}</View> : null}
-    {kind === 'strength' ? <Button title={routine?.name ?? 'בחירת רוטינה'} variant="secondary" onPress={() => setPicker(true)} /> : <Field label="שם אימון הריצה" value={title} onChangeText={setTitle} />}
+    {kind === 'strength' ? <Button title={routine?.name ?? 'בחירת רוטינה'} variant="secondary" onPress={() => setPicker(true)} /> : <Field label="שם האימון" value={title} onChangeText={setTitle} />}
     <Field label={mode === 'weekly' ? 'החל מתאריך (YYYY-MM-DD)' : 'תאריך (YYYY-MM-DD)'} value={selectedDate} onChangeText={setSelectedDate} autoCapitalize="none" style={{ writingDirection: 'ltr' }} />
     {kind === 'run' ? <Text style={[font.tiny, { marginBottom: 12 }]}>אם קיימת תוכנית ריצה מפורטת לאותו יום, היא תופיע במקום הריצה הקבועה.</Text> : null}
     <Button title="שמירת אימון" loading={busy} disabled={busy} onPress={save} />
     <Text style={[font.h3, { marginVertical: 14 }]}>החלוקה השבועית שלי</Text>
     {data.rules.filter(r => !r.endDate || r.endDate >= today()).map(r => <Card key={r.id}>
-      <Row style={{ justifyContent: 'space-between', gap: 8 }}><View style={{ flex: 1 }}><Text style={font.body}>{weekdays[r.weekday]} · {r.title}</Text><Text style={font.tiny}>{r.kind === 'strength' ? 'כוח' : 'ריצה'} · החל מ־{r.startDate}</Text></View><Button title="ביטול הסדרה" size="sm" variant="danger" disabled={busy} onPress={() => stopRule(r.id)} /></Row>
+      <Row style={{ justifyContent: 'space-between', gap: 8 }}><View style={{ flex: 1 }}><Text style={font.body}>{weekdays[r.weekday]} · {r.title}</Text><Text style={font.tiny}>{r.kind === 'strength' ? 'כוח' : r.kind === 'crossfit' ? 'קרוספיט' : 'ריצה'} · החל מ־{r.startDate}</Text></View><Button title="ביטול הסדרה" size="sm" variant="danger" disabled={busy} onPress={() => stopRule(r.id)} /></Row>
     </Card>)}
     <Text style={font.tiny}>ביטול סדרה חל מהיום. ההיסטוריה נשמרת. אפשר להזיז או לבטל אימון בודד מתוך היומן.</Text>
     <Menu visible={picker} onClose={() => setPicker(false)} title="בחירת רוטינה" items={routines().map(r => ({ label: r.name, onPress: () => setRoutineId(r.id) }))} />

@@ -19,6 +19,7 @@ import { startEmpty } from '../../src/strength/workout';
 import { chevronBack, chevronForward, colors, font, radius, spacing } from '../../src/theme';
 
 export default function Train() {
+  const routerForTraining = useRouter();
   const params = useLocalSearchParams<{ tab?: string }>();
   const [tab, setTab] = useState<'strength' | 'run' | 'journal'>(params.tab === 'journal' ? 'journal' : params.tab === 'run' ? 'run' : 'strength');
   useEffect(() => {
@@ -38,6 +39,7 @@ export default function Train() {
           style={{ marginBottom: 0 }}
         />
       </View>
+      {tab !== 'journal' ? <Row style={{ paddingHorizontal: spacing.lg, gap: 8, flexWrap: 'wrap' }}><Button title="תוכנית משולבת" size="sm" onPress={() => routerForTraining.push('/training/plan')} /><Button title="חדר כושר מזדמן" size="sm" variant="secondary" onPress={() => routerForTraining.push('/training/spontaneous')} /></Row> : null}
       {tab === 'journal' ? <TrainingJournal /> : tab === 'strength' ? <Strength /> : <Running />}
     </SafeAreaView>
   );

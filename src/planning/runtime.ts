@@ -11,13 +11,13 @@ setAdaptationProvider(() => {
     ...L.workouts.filter(w => !manual.has(`lift:${w.id}`)).map(w => {
       const sets = w.items.flatMap(i => i.sets).filter(s => s.type !== 'warmup');
       return { id: `lift:${w.id}`, date: toISODate(new Date(w.startedAt)), title: w.name,
-        kind: 'strength' as const, routineId: w.routineId ?? undefined, minutes: w.durationSec / 60, effort: sets.some(s => s.effort === 'fail') || sets.length >= 18 ? 8 : 6,
+        replacementId: w.plannedSessionId, kind: w.trainingKind ?? 'strength' as const, routineId: w.routineId ?? undefined, minutes: w.durationSec / 60, effort: sets.some(s => s.effort === 'fail') || sets.length >= 18 ? 8 : 6,
         areas: muscleAreas(w.items.filter(i => i.sets.some(s => s.type !== 'warmup')).flatMap(i => { const ex = L.exercises.find(e => e.id === i.exerciseId); return ex ? [ex.primary, ...(ex.secondary ?? [])] : ['Other']; })) };
     }),
     ...R.activities.filter(a => !manual.has(`activity:${a.id}`)).map(a => ({ id: `activity:${a.id}`, date: toISODate(new Date(a.start_time)), title: a.name ?? 'ריצה', kind: 'run' as const, minutes: a.duration_s / 60,
       effort: a.duration_s >= 3600 || (a.training_load ?? 0) >= 70 ? 7 : 6, areas: ['legs' as const] })),
   ];
-  const feedback = (usePlanning.getState().data.alternateWorkouts ?? []).map(w => { const lift = L.workouts.find(a => `lift:${a.id}` === w.id); const run = R.activities.find(a => `activity:${a.id}` === w.id); return { ...w, kind: lift ? 'strength' as const : run ? 'run' as const : undefined, routineId: lift?.routineId ?? undefined }; });
+  const feedback = (usePlanning.getState().data.alternateWorkouts ?? []).map(w => { const lift = L.workouts.find(a => `lift:${a.id}` === w.id); const run = R.activities.find(a => `activity:${a.id}` === w.id); return { ...w, kind: lift ? lift.trainingKind ?? 'strength' as const : run ? 'run' as const : w.kind ?? (/wod|קרוספיט/i.test(w.title) ? 'crossfit' as const : 'strength' as const), replacementId: w.replacementId ?? lift?.plannedSessionId, routineId: lift?.routineId ?? undefined }; });
   return { today: today(), loads: [...loads, ...feedback], routineAreas: Object.fromEntries(L.routines.map(r => [r.id, muscleAreas(r.items.flatMap(i => { const ex = L.exercises.find(e => e.id === i.exerciseId); return ex ? [ex.primary, ...(ex.secondary ?? [])] : ['Other']; }))])),
     protectedDates: [...R.races.map(r => r.race_date), ...R.plans.filter(p => p.workout_type === 'race').map(p => p.plan_date)] };
 });

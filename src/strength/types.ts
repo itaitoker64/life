@@ -85,6 +85,10 @@ export interface ActiveWorkout {
   resumed?: boolean;
   failChecksAssigned?: boolean;
   adaptationDeload?: boolean;
+  equipmentAdjusted?: boolean;
+  plannedSessionId?: string;
+  trainingKind?: 'strength' | 'run' | 'crossfit';
+  adaptationNotes?: string;
   items: LiveItem[];
   rest: { endsAt: number; duration: number; notificationId?: string | null } | null;
 }
@@ -121,6 +125,9 @@ export interface Workout {
   durationSec: number;
   notes: string;
   deload?: boolean;
+  equipmentAdjusted?: boolean;
+  plannedSessionId?: string;
+  trainingKind?: 'strength' | 'run' | 'crossfit';
   items: WorkoutItem[];
   prs?: PR[];
 }

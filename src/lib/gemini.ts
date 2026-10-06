@@ -76,9 +76,12 @@ export async function generateJson<T extends z.ZodType>(opts: {
   for (const model of GEMINI_MODELS) {
     for (let attempt = 0; attempt < 3; attempt++) {
       let res: Response;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
       try {
         res = await fetch(`${ENDPOINT}/${model}:generateContent`, {
           method: 'POST',
+          signal: controller.signal,
           headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
           body: JSON.stringify({
             systemInstruction: {
@@ -98,6 +101,8 @@ ${JSON.stringify(responseJsonSchema)}` }],
       } catch (e) {
         lastErr = new GeminiError('אין חיבור לאינטרנט, או ש-Gemini לא זמין כרגע.', 0);
         break;
+      } finally {
+        clearTimeout(timeout);
       }
       const body = await res.json().catch(() => null);
       if (!res.ok) {

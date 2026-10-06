@@ -1,10 +1,12 @@
+import { effectiveCoachPlans, type CombinedProgram } from '../training/combined';
+import type { WorkoutDraft } from '../training/equipment';
 import { adaptSessions, adaptationContext, type TrainingLoad, type Adjustment } from './adaptation';
 import type { DailyTotal } from '../db/log';
 import { addDays, parseISODate, toISODate } from '../lib/dates';
 import type { Activity, CoachingPlan } from '../run/types';
 import type { Workout } from '../strength/types';
 
-export type TrainingKind = 'strength' | 'run';
+export type TrainingKind = 'strength' | 'run' | 'crossfit';
 export interface Session {
   id: string;
   date: string;
@@ -13,6 +15,9 @@ export interface Session {
   routineId?: string;
   coachDate?: string;
   manual?: boolean;
+  fixedDay?: boolean;
+  plannedEffort?: number;
+  minutes?: number;
   adjustment?: Adjustment;
   status?: 'planned' | 'completed' | 'skipped';
 }
@@ -24,6 +29,9 @@ export interface WeeklyRule {
   routineId?: string;
   startDate: string;
   endDate?: string;
+  fixedDay?: boolean;
+  plannedEffort?: number;
+  minutes?: number;
 }
 export interface OccurrenceOverride {
   id: string;
@@ -45,6 +53,9 @@ export interface PlanningData {
   alternateWorkouts?: TrainingLoad[];
   dismissedAdjustments?: string[];
   adaptationEnabled?: boolean;
+  combinedProgram?: CombinedProgram;
+  programHistory?: CombinedProgram[];
+  workoutDrafts?: WorkoutDraft[];
   automaticAdjustments?: Array<{ id: string; date: string; adjustment: Adjustment }>;
 }
 export const emptyPlanning = (): PlanningData => ({
@@ -73,9 +84,9 @@ export function plannedSessions(data: PlanningData, coachPlans: CoachingPlan[], 
     if (pastAdjustment) s = { ...s, adjustment: pastAdjustment.adjustment };
     return date >= from && date <= to ? [{ ...s, date, manual: !!override }] : [];
   };
-  const coach = coachPlans.filter(p => p.workout_type !== 'rest').map(p => ({
+  const coach = effectiveCoachPlans(data.combinedProgram, data.programHistory, coachPlans, from, to, data.overrides.filter(o => o.id.startsWith('coach:')).map(o => o.originalDate), data.overrides.map(o => o.id)).filter(p => p.workout_type !== 'rest').map(p => ({
     id: `coach:${p.id}`, date: p.plan_date, coachDate: p.plan_date,
-    kind: 'run' as const, title: p.title, status: p.status,
+    kind: 'run' as const, title: p.title, status: p.status, minutes: p.duration_min ?? undefined, plannedEffort: ['easy', 'recovery'].includes(p.workout_type) ? 4 : 7,
   }));
   // The coach's detailed session replaces a generic recurring run for that day.
   const coachDates = new Set(coach.flatMap(s => overrides.get(s.id)?.cancelled ? [] : [s.date, overrides.get(s.id)?.date ?? s.date]));
@@ -88,7 +99,7 @@ export function plannedSessions(data: PlanningData, coachPlans: CoachingPlan[], 
     for (const date of dates) {
       if (date < rule.startDate || (rule.endDate && date > rule.endDate) || parseISODate(date).getDay() !== rule.weekday) continue;
       if (rule.kind === 'run' && coachDates.has(date)) continue;
-      result.push(...apply({ id: `weekly:${rule.id}:${date}`, date, kind: rule.kind, title: rule.title, routineId: rule.routineId }));
+      result.push(...apply({ id: `weekly:${rule.id}:${date}`, date, kind: rule.kind, title: rule.title, routineId: rule.routineId, fixedDay: rule.fixedDay ?? rule.kind === 'crossfit', plannedEffort: rule.plannedEffort, minutes: rule.minutes }));
     }
   }
   const adapted = context && data.adaptationEnabled !== false ? adaptSessions(result, { ...context, loads: [...context.loads, ...(data.alternateWorkouts ?? []).filter(w => !context.loads.some(l => l.id === w.id))] }, data.dismissedAdjustments ?? []) : result;
@@ -104,12 +115,13 @@ export interface CompletedSession {
   workoutId?: string;
   replacementId?: string;
   km: number;
+  minutes: number;
 }
 export function completedSessions(workouts: Workout[], activities: Activity[], data?: PlanningData): CompletedSession[] {
   return [
-    ...(data?.alternateWorkouts ?? []).filter(w => !workouts.some(a => `lift:${a.id}` === w.id) && !activities.some(a => `activity:${a.id}` === w.id)).map(w => ({ id: w.id, date: w.date, kind: 'strength' as const, title: w.title, replacementId: w.replacementId, km: 0 })),
-    ...workouts.map(w => ({ id: `lift:${w.id}`, workoutId: w.id, date: toISODate(new Date(w.startedAt)), kind: 'strength' as const, title: w.name, replacementId: data?.alternateWorkouts?.find(a => a.id === `lift:${w.id}`)?.replacementId, routineId: w.routineId ?? undefined, km: 0 })),
-    ...activities.map(a => ({ id: `activity:${a.id}`, date: toISODate(new Date(a.start_time)), kind: 'run' as const, title: a.name ?? 'ריצה', replacementId: data?.alternateWorkouts?.find(w => w.id === `activity:${a.id}`)?.replacementId, km: a.distance_m / 1000 })),
+    ...(data?.alternateWorkouts ?? []).filter(w => !workouts.some(a => `lift:${a.id}` === w.id) && !activities.some(a => `activity:${a.id}` === w.id)).map(w => ({ id: w.id, date: w.date, kind: w.kind ?? (/wod|קרוספיט/i.test(w.title) ? 'crossfit' as const : 'strength' as const), title: w.title, replacementId: w.replacementId, km: 0, minutes: w.minutes })),
+    ...workouts.map(w => ({ id: `lift:${w.id}`, workoutId: w.id, date: toISODate(new Date(w.startedAt)), kind: w.trainingKind ?? 'strength' as const, title: w.name, replacementId: w.plannedSessionId ?? data?.alternateWorkouts?.find(a => a.id === `lift:${w.id}`)?.replacementId, routineId: w.routineId ?? undefined, km: 0, minutes: (w.durationSec ?? 0) / 60 })),
+    ...activities.map(a => ({ id: `activity:${a.id}`, date: toISODate(new Date(a.start_time)), kind: 'run' as const, title: a.name ?? 'ריצה', replacementId: data?.alternateWorkouts?.find(w => w.id === `activity:${a.id}`)?.replacementId, km: a.distance_m / 1000, minutes: (a.duration_s ?? 0) / 60 })),
   ];
 }
 
@@ -144,6 +156,7 @@ export function summarizePeriod(plans: Session[], actual: CompletedSession[], to
     matched: matches.size,
     completed: periodActual.length + [...matchedIds].filter(id => id.startsWith('marked:')).length,
     strength: periodActual.filter(a => a.kind === 'strength').length,
+    crossfit: periodActual.filter(a => a.kind === 'crossfit').length,
     runs: periodActual.filter(a => a.kind === 'run').length,
     km: periodActual.reduce((n, a) => n + a.km, 0),
     extra: periodActual.filter(a => !matchedIds.has(a.id)).length,

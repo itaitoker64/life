@@ -131,7 +131,7 @@ export default function WorkoutScreen() {
       return;
     }
     const r = a!.routineId ? routine(a!.routineId) : null;
-    const changes = r ? routineDiff(r, a!.items) : [];
+    const changes = r && !a!.equipmentAdjusted && !a!.adaptationDeload ? routineDiff(r, a!.items) : [];
     if (!changes.length) return commit();
     setFinishSheet(changes);
   }
@@ -187,6 +187,7 @@ export default function WorkoutScreen() {
             <Text style={[font.small, { color: colors.text }]}>שבוע דילואוד: אותם משקלים, חצי מהסטים, לעצור כשנשארות 3–4 חזרות.</Text>
           </View>
         ) : null}
+        {a.equipmentAdjusted ? <Text style={[font.small, { marginBottom: spacing.md }]}>ציוד מזדמן: בחרו משקלים מחדש אחרי חימום. האימון הזה לא משנה את הרוטינה או את יעדי המשקל במקום הקבוע.</Text> : null}
         {!a.items.length ? <Text style={[font.small, { textAlign: 'center', padding: 30 }]}>אין עדיין תרגילים. הוסיפו את הראשון למטה.</Text> : null}
         {a.items.map((it, idx) => (
           <View key={`${it.exerciseId}-${idx}`} onLayout={(e) => (cardY.current[idx] = e.nativeEvent.layout.y)}>
@@ -259,9 +260,13 @@ export default function WorkoutScreen() {
                 s.reps = '';
               }
             });
-            applyTarget(item, a.id);
+            if (!a.equipmentAdjusted) applyTarget(item, a.id);
           } else {
-            for (const id of ids) a.items.push(newItem(id, { sets: setsFromLast(id) }));
+            for (const id of ids) {
+              const item = newItem(id, { sets: a.equipmentAdjusted ? [{ type: 'normal', weight: '', reps: 10, done: false }] : setsFromLast(id) });
+              if (a.equipmentAdjusted) item.sets = [{ type: 'normal', weight: '', reps: 10, done: false }];
+              a.items.push(item);
+            }
           }
           touch();
         }}
@@ -352,7 +357,7 @@ function ExerciseCard({
 }) {
   const ex = exercise(it.exerciseId);
   const isCardio = ex?.tracking === 'cardio';
-  const last = lastPerformance(it.exerciseId, a.id);
+  const last = a.equipmentAdjusted ? null : lastPerformance(it.exerciseId, a.id);
   const [menu, setMenu] = useState(false);
   const [ssMenu, setSsMenu] = useState(false);
   const [restSheet, setRestSheet] = useState(false);
@@ -502,7 +507,7 @@ function ExerciseCard({
   }
 
   const hasWarm = it.sets.some((s) => s.type === 'warmup');
-  const tr = !isCardio && !deloadActive() ? trend(it.exerciseId) : null;
+  const tr = !isCardio && !a.equipmentAdjusted && a.trainingKind !== 'crossfit' && !deloadActive() ? trend(it.exerciseId) : null;
 
   return (
     <View
@@ -522,7 +527,7 @@ function ExerciseCard({
           <ExerciseThumb ex={ex} size={38} />
         </Pressable>
         <Pressable style={{ flex: 1 }} onPress={onOpenExercise}>
-          {it.superset ? <Text style={{ color: ssColor!, fontSize: 11, fontWeight: '800' }}>{ss.label(a.items, it)}</Text> : null}
+          {it.superset ? <Text style={{ color: ssColor!, fontSize: 11, fontWeight: '800' }}>{a.trainingKind === 'crossfit' ? 'סבב קרוספיט' : ss.label(a.items, it)}</Text> : null}
           <Text style={[font.h3, { color: colors.primary }]} numberOfLines={2}>
             {ex ? exerciseName(ex.id) : 'תרגיל שנמחק'}
           </Text>
@@ -812,11 +817,11 @@ function ExerciseCard({
 }
 
 function TargetRow({ a, it, onPress }: { a: ActiveWorkout; it: LiveItem; onPress: () => void }) {
-  const plan = progressionPlan(it.exerciseId, it.repMin, it.repMax, a.id);
+  const plan = a.equipmentAdjusted || a.trainingKind === 'crossfit' ? null : progressionPlan(it.exerciseId, it.repMin, it.repMax, a.id);
   let main: string;
   let why: string;
   if (!plan) {
-    main = 'פעם ראשונה — מוצאים את המשקל';
+    main = a.equipmentAdjusted ? 'ציוד אחר — בוחרים משקל מחדש' : a.trainingKind === 'crossfit' ? 'סבב טכני — בוחרים עומס נשלט' : 'פעם ראשונה — מוצאים את המשקל';
     why = `בחרו משקל שאפשר לעשות איתו ${it.repMin}–${it.repMax} חזרות ועוד 1–3 בטנק`;
   } else if (plan.counts.deload) {
     main = 'דילואוד: אותו משקל, חצי מהסטים';

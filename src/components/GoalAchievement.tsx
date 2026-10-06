@@ -1,3 +1,5 @@
+import { completedSessions } from '../planning/model';
+import { usePlanning } from '../planning/store';
 import { Text, View } from 'react-native';
 import type { DailyTotal } from '../db/log';
 import { formatShortDate, today, toISODate } from '../lib/dates';
@@ -9,11 +11,16 @@ import { colors, font } from '../theme';
 import { Card, Row, SectionTitle } from './ui';
 
 export function GoalAchievement({ days, totals, selected }: { days: string[]; totals: Map<string, DailyTotal>; selected: string }) {
+  const data = usePlanning(s => s.data);
   const profile = useApp(s => s.profile);
   if (!profile) return null;
   const inWeek = (date: string) => date >= days[0] && date <= days[6];
-  const strength = L.workouts.filter(w => inWeek(toISODate(new Date(w.startedAt)))).length;
-  const km = R.activities.filter(a => inWeek(toISODate(new Date(a.start_time)))).reduce((n, a) => n + a.distance_m / 1000, 0);
+  const actual = completedSessions(L.workouts, R.activities, data).filter(a => inWeek(a.date) && a.date <= today());
+  const program = data.combinedProgram?.enabled ? data.combinedProgram : undefined;
+  const aerobicMinutes = actual.filter(a => a.kind === 'run').reduce((sum, a) => sum + a.minutes, 0);
+  const strength = actual.filter(a => a.kind === 'strength').length;
+  const crossfit = actual.filter(a => a.kind === 'crossfit').length;
+  const km = R.activities.filter(a => inWeek(toISODate(new Date(a.start_time))) && toISODate(new Date(a.start_time)) <= today()).reduce((n, a) => n + a.distance_m / 1000, 0);
   const runTarget = R.profile.weekly_km_target ?? latestAssessment()?.weekly_km_target;
   const day = totals.get(selected);
   const elapsed = days.filter(d => d <= today());
@@ -24,9 +31,11 @@ export function GoalAchievement({ days, totals, selected }: { days: string[]; to
     <SectionTitle>עמידה ביעדים · {formatShortDate(days[0])} – {formatShortDate(days[6])}</SectionTitle>
     <Card>
       <Text style={[font.h3, { marginBottom: 14 }]}>אימונים השבוע</Text>
-      <GoalBar label="אימוני כוח" value={strength} target={weeklyGoal()} unit="אימונים" color={colors.primary} />
-      <GoalBar label="מרחק ריצה" value={km} target={runTarget ?? 0} unit="ק״מ" color={colors.run} />
-      {!runTarget ? <Text style={font.tiny}>יעד המרחק יוצג לאחר יצירת תוכנית ריצה.</Text> : null}
+      <GoalBar label="אימוני כוח" value={strength} target={data.combinedProgram?.enabled ? data.combinedProgram.slots.filter(s => s === 'strength').length : weeklyGoal()} unit="אימונים" color={colors.primary} />
+      <GoalBar label="קרוספיט" value={crossfit} target={data.combinedProgram?.enabled ? data.combinedProgram.slots.filter(s => s === 'crossfit').length : data.rules.filter(r => r.kind === 'crossfit' && (!r.endDate || r.endDate >= today())).length} unit="אימונים" color={colors.flame} />
+      {program ? <GoalBar label="ריצה / אירובי" value={aerobicMinutes} target={program.slots.filter(s => s === 'run').length * (program.level === 'returning' ? 25 : 35)} unit="דקות" color={colors.run} /> : null}
+      <GoalBar label="מרחק ריצה" value={km} target={program ? 0 : runTarget ?? 0} unit="ק״מ" color={colors.run} />
+      {program ? <Text style={font.tiny}>יעד החלוקה המשולבת נמדד בזמן. מרחק מוצג רק מריצות שנרשמו, ללא תחליפי אופניים או קרוספיט.</Text> : !runTarget ? <Text style={font.tiny}>יעד המרחק יוצג לאחר יצירת תוכנית ריצה.</Text> : null}
     </Card>
     <Card>
       <Text style={[font.h3, { marginBottom: 14 }]}>תזונה · {formatShortDate(selected)}</Text>

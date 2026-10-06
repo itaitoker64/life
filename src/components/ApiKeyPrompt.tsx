@@ -4,7 +4,7 @@ import { getApiKey, setApiKey } from '../lib/secrets';
 import { colors, font, spacing } from '../theme';
 import { Button, Card, Field } from './ui';
 
-export function ApiKeyPrompt({ onSaved }: { onSaved: () => void }) {
+export function ApiKeyPrompt({ onSaved, description }: { onSaved: () => void; description?: string }) {
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -16,9 +16,8 @@ export function ApiKeyPrompt({ onSaved }: { onSaved: () => void }) {
       return;
     }
     setBusy(true);
-    await setApiKey(k);
-    const stored = await getApiKey();
-    setBusy(false);
+    let stored: string | null = null;
+    try { await setApiKey(k); stored = await getApiKey(); } catch { setError('לא ניתן לשמור את המפתח במכשיר. נסו שוב.'); return; } finally { setBusy(false); }
     if (!stored) {
       setError('לא הצלחתי לשמור את המפתח במכשיר. נסו שוב.');
       return;
@@ -32,7 +31,7 @@ export function ApiKeyPrompt({ onSaved }: { onSaved: () => void }) {
     <Card style={{ borderColor: colors.warning }}>
       <Text style={[font.h3, { marginBottom: 4 }]}>הוסיפו מפתח Gemini</Text>
       <Text style={[font.small, { lineHeight: 19, marginBottom: spacing.md }]}>
-        זיהוי אוכל מתמונה וקריאת תוויות עובדים עם מפתח Gemini חינמי. צרו מפתח ב-{' '}
+        {description ?? 'זיהוי אוכל מתמונה וקריאת תוויות עובדים עם מפתח Gemini.'}{' '}צרו מפתח ב־
         <Text style={{ color: colors.info, fontWeight: '600' }} onPress={() => Linking.openURL('https://aistudio.google.com/apikey')}>
           aistudio.google.com/apikey
         </Text>{' '}

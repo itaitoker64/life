@@ -321,7 +321,7 @@ export function workoutSetCount(w: Workout): number {
 export function exerciseBests(exId: string, exceptWorkoutId?: string) {
   let e1rm = 0, weight = 0, reps = 0, volume = 0, setVolume = 0;
   for (const w of L.workouts) {
-    if (exceptWorkoutId && w.id === exceptWorkoutId) continue;
+    if (w.equipmentAdjusted || w.trainingKind && w.trainingKind !== 'strength' || exceptWorkoutId && w.id === exceptWorkoutId) continue;
     let wVol = 0;
     for (const it of w.items || []) {
       if (it.exerciseId !== exId) continue;
@@ -343,7 +343,7 @@ export function exerciseBests(exId: string, exceptWorkoutId?: string) {
 
 export function lastPerformance(exId: string, exceptWorkoutId?: string | null, skipDeload?: boolean) {
   for (const w of workouts()) {
-    if (exceptWorkoutId && w.id === exceptWorkoutId) continue;
+    if (w.equipmentAdjusted || w.trainingKind && w.trainingKind !== 'strength' || exceptWorkoutId && w.id === exceptWorkoutId) continue;
     if (skipDeload && w.deload) continue;
     const it = (w.items || []).find((x) => x.exerciseId === exId);
     if (it) return { date: w.startedAt, sets: (it.sets || []).filter((s) => s.done) };

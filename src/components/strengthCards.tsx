@@ -6,6 +6,10 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 import { deloadActive, deloadDaysLeft, endDeload, fatigue, snoozeDeload, startDeload, summaryLine } from '../strength/coach';
 import { GROWTH_MUSCLES, muscleHe, muscleTarget } from '../strength/seed';
+import { usePlanning } from '../planning/store';
+import { completedSessions, matchSessions, plannedSessions } from '../planning/model';
+import { R } from '../run/store';
+import { addDays, formatLongDate, today } from '../lib/dates';
 import { L, exercise, weeklyMuscleSets } from '../strength/store';
 import type { Routine } from '../strength/types';
 import { fmtClock, fmtNum, relDay, weekStart } from '../strength/utils';
@@ -49,6 +53,7 @@ export function useStartWorkout() {
 
 /** "Up next" hero: the in-progress workout, the next routine in the rotation, or a first-time CTA. */
 export function StrengthHero() {
+  const data = usePlanning(s => s.data);
   const router = useRouter();
   const startWorkout = useStartWorkout();
   const [, setTick] = useState(0);
@@ -82,6 +87,12 @@ export function StrengthHero() {
   const last = lastDone(r.id);
   const mins = avgMinutes(r.id);
   const meta = [`${r.items.length} תרגילים`];
+  if (data.combinedProgram?.enabled) {
+    const plans = plannedSessions(data, R.plans, today(), addDays(today(), 7));
+    const matches = matchSessions(plans, completedSessions(L.workouts, R.activities, data));
+    const next = plans.find(p => p.kind === 'strength' && p.routineId === r.id && p.status !== 'skipped' && !matches.has(p.id));
+    if (next) meta.unshift(formatLongDate(next.date));
+  }
   if (mins) meta.push(`~${mins} דק׳`);
   if (last) meta.push(`לאחרונה ${relDay(last.startedAt)}`);
   const plan = planLine(r);
@@ -139,17 +150,18 @@ function HeroButton({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyp
 
 /** Weekly goal ring + streak + this week's day strip. */
 export function WeekGoalCard() {
+  usePlanning(s => s.data);
   const ws = weekStart(Date.now());
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const days = new Set<number>();
   for (const w of L.workouts) {
-    if (w.startedAt < ws) continue;
+    if (w.startedAt < ws || w.trainingKind && w.trainingKind !== 'strength') continue;
     const d = new Date(w.startedAt);
     d.setHours(0, 0, 0, 0);
     days.add(d.getTime());
   }
-  const done = L.workouts.filter((w) => w.startedAt >= ws).length;
+  const done = L.workouts.filter((w) => (!w.trainingKind || w.trainingKind === 'strength') && w.startedAt >= ws).length;
   const goal = weeklyGoal();
   const streak = weekStreak();
   const left = goal - done;
@@ -180,7 +192,7 @@ export function WeekGoalCard() {
           </Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={font.label}>השבוע</Text>
+          <Text style={font.label}>אימוני כוח השבוע</Text>
           <Text style={[font.body, { fontWeight: '700' }]}>{msg}</Text>
           {streak ? (
             <Row style={{ gap: 4, marginTop: 2 }}>

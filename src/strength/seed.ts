@@ -174,6 +174,17 @@ const RAW: Array<[string, string, string, string, string?]> = [
   ['Rowing Machine', 'Cardio', 'Machine', 'מכונת חתירה'],
   ['Elliptical', 'Cardio', 'Machine', 'אליפטיקל'],
   ['Stair Climber', 'Cardio', 'Machine', 'מדרגות'],
+  ['Standing Dumbbell Row', 'Back', 'Dumbbell', 'חתירה בעמידה במשקולות'],
+  ['Kettlebell Goblet Squat', 'Quadriceps', 'Kettlebell', 'גובלט סקוואט בקטלבל'],
+  ['Kettlebell Deadlift', 'Hamstrings', 'Kettlebell', 'דדליפט בקטלבל'],
+  ['Kettlebell Row', 'Back', 'Kettlebell', 'חתירה בקטלבל'],
+  ['Band Bent-Over Row', 'Back', 'Band', 'חתירה בכפיפה בגומייה'],
+  ['Band Romanian Deadlift', 'Hamstrings', 'Band', 'דדליפט רומני בגומייה'],
+  ['Bodyweight Squat', 'Quadriceps', 'Bodyweight', 'סקוואט במשקל גוף'],
+  ['Bodyweight Split Squat', 'Quadriceps', 'Bodyweight', 'מכרע במקום במשקל גוף'],
+  ['Dumbbell Romanian Deadlift', 'Hamstrings', 'Dumbbell', 'דדליפט רומני במשקולות'],
+  ['Floor Glute Bridge', 'Glutes', 'Bodyweight', 'גשר ישבן על הרצפה'],
+  ['Wall Push-Up', 'Chest', 'Bodyweight', 'שכיבות סמיכה כנגד קיר'],
   ['Jump Rope', 'Cardio', 'Other', 'קפיצה בחבל'],
 ];
 
@@ -229,7 +240,7 @@ function repRange(name: string, primary: string): [number, number] {
 }
 
 // Bump when built-in data changes so existing installs merge the update.
-export const SEED_VERSION = 7;
+export const SEED_VERSION = 8;
 
 export function builtinExercises(): Exercise[] {
   return RAW.map(([name, primary, equipment, nameHe, pinned]) => {

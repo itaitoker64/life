@@ -35,7 +35,7 @@ export function WeeklyReview({ days, totals, loading, error }: { days: string[];
         <Ring size={110} stroke={9} value={summary.matched} max={summary.planned} label={`${summary.matched}/${summary.planned}`} sub="בוצעו מהתכנון" color={colors.primary} />
         <View style={{ flexShrink: 1, gap: 8 }}>
           <Text style={font.body}>{summary.completed} אימונים בוצעו בסך הכול</Text>
-          <Text style={font.small}>{summary.strength} כוח · {summary.runs} ריצות · {summary.km.toFixed(1)} ק״מ</Text>
+          <Text style={font.small}>{summary.strength} כוח · {summary.crossfit} קרוספיט · {summary.runs} אירובי · {summary.km.toFixed(1)} ק״מ</Text>
           {summary.extra ? <Text style={font.tiny}>{summary.extra} אימונים מעבר לתכנון</Text> : null}
         </View>
       </Row>
@@ -71,6 +71,7 @@ export function MonthlyTrends({ totals, loading, error }: { totals: DailyTotal[]
     <SectionTitle>מגמות · ארבעה שבועות מלאים</SectionTitle>
     <Text style={[font.tiny, { marginBottom: 12 }]}>{formatShortDate(from)} – {formatShortDate(to)} · ללא השבוע הנוכחי החלקי</Text>
     <TrendPanel title="כוח · אימונים לשבוע" values={weeks.map(w => w.strength)} labels={labels} width={chartWidth} color={colors.primary} unit="אימונים" />
+    <TrendPanel title="קרוספיט · אימונים לשבוע" values={weeks.map(w => w.crossfit)} labels={labels} width={chartWidth} color={colors.flame} unit="אימונים" />
     <TrendPanel title="ריצה · מרחק לשבוע" values={weeks.map(w => Number(w.km.toFixed(1)))} labels={labels} width={chartWidth} color={colors.run} unit="ק״מ" />
     <Card>
       <Text style={[font.h3, { marginBottom: 12 }]}>תזונה · ימים ביעד</Text>

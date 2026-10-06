@@ -1,5 +1,6 @@
+import type { WorkoutDraft } from '../training/equipment';
 import { reducedStrengthItems } from '../planning/adaptation';
-import { plannedSessions } from '../planning/model';
+import { completedSessions, matchSessions, plannedSessions } from '../planning/model';
 import { usePlanning } from '../planning/store';
 import { R } from '../run/store';
 import { today } from '../lib/dates';
@@ -180,6 +181,10 @@ export function resumeFinished(w: Workout) {
     priorDurationSec: w.durationSec || 0,
     resumed: true,
     adaptationDeload: w.deload,
+    equipmentAdjusted: w.equipmentAdjusted,
+    plannedSessionId: w.plannedSessionId,
+    trainingKind: w.trainingKind,
+    adaptationNotes: w.notes,
     failChecksAssigned: true,
     rest: null,
     items: w.items.map((it) => ({
@@ -193,7 +198,7 @@ export function resumeFinished(w: Workout) {
     })),
   };
   const r = a.routineId ? routine(a.routineId) : null;
-  if (r && !w.deload) {
+  if (r && !w.deload && !w.equipmentAdjusted) {
     for (const ri of r.items) {
       const it = a.items.find((x) => x.exerciseId === ri.exerciseId);
       if (!it) {
@@ -226,14 +231,51 @@ export function startFromRoutine(routineId: string) {
   if (!r) return;
   const a = newActive(r.name, routineId);
   a.items = r.items.map(itemFromRoutine);
-  const planned = plannedSessions(usePlanning.getState().data, R.plans, today(), today()).find(s => s.routineId === routineId && s.status !== 'completed');
+  const data = usePlanning.getState().data;
+  const plans = plannedSessions(data, R.plans, today(), today());
+  const matches = matchSessions(plans, completedSessions(L.workouts, R.activities, data));
+  const planned = plans.find(s => s.routineId === routineId && s.status !== 'skipped' && !matches.has(s.id));
+  a.plannedSessionId = planned?.id;
+  a.trainingKind = planned?.kind ?? (r.bundledKey?.startsWith('life:hybrid:crossfit:') ? 'crossfit' : 'strength');
+  if (a.trainingKind === 'crossfit') {
+    a.failChecksAssigned = true;
+    a.items = r.items.map(item => ({ ...deepClone(item), repMin: item.repMin ?? 8, repMax: item.repMax ?? 12, sets: item.sets.map(s => ({ ...s, weight: L.exercises.find(e => e.id === item.exerciseId)?.tracking === 'cardio' ? s.weight : '' as const, done: false })) }));
+  }
   if (planned?.adjustment?.mode === 'reduce') {
     const factor = planned.adjustment.factor ?? 0.7;
     a.name = `${r.name} · עומס מופחת`;
     a.failChecksAssigned = true;
     a.adaptationDeload = true;
-    a.items = reducedStrengthItems(a.items, factor);
+    a.items = reducedStrengthItems(a.items, factor, L.exercises.filter(e => e.tracking === 'cardio').map(e => e.id));
     a.items.forEach(autoWarmups);
+  }
+  setActive(a);
+}
+
+/** Create only an active copy: the saved routine and its progression remain untouched. */
+export function startSpontaneousWorkout(draft: WorkoutDraft) {
+  if (!draft.rows.length) throw new Error('אין תרגילים מאומתים להתחלה.');
+  const a = newActive(draft.title, draft.sourceRoutineId);
+  a.trainingKind = draft.kind;
+  a.plannedSessionId = draft.sourceSessionId;
+  a.equipmentAdjusted = true;
+  a.failChecksAssigned = true;
+  a.adaptationNotes = `${draft.instructions}\n${draft.rows.map(row => row.reason).join('\n')}`;
+  a.items = draft.rows.map(({ item }) => ({ exerciseId: item.exerciseId, superset: item.superset, notes: item.notes,
+    restSec: item.restSec, repMin: item.repMin ?? 8, repMax: item.repMax ?? 12,
+    sets: item.sets.map(set => ({ ...set, type: 'normal', weight: L.exercises.find(e => e.id === item.exerciseId)?.tracking === 'cardio' ? set.weight : '', done: false })) }));
+  const source = draft.sourceSessionId ? plannedSessions(usePlanning.getState().data, R.plans, today(), today()).find(s => s.id === draft.sourceSessionId) : undefined;
+  if (source?.adjustment?.mode === 'reduce') {
+    if (draft.appliedAdjustmentKey !== source.adjustment.key) {
+      const factor = source.adjustment.factor ?? 0.7;
+      a.items = reducedStrengthItems(a.items, factor, L.exercises.filter(e => e.tracking === 'cardio').map(e => e.id));
+      if (draft.kind === 'run') {
+        const limit = Math.max(10, Math.round((source.minutes ?? draft.minutes) * factor));
+        a.items.forEach(item => item.sets.forEach(set => { set.weight = Math.min(Number(set.weight) || limit, limit); }));
+      }
+    }
+    a.adaptationDeload = true;
+    a.name += ' · עומס מופחת';
   }
   setActive(a);
 }
@@ -416,6 +458,7 @@ export function supersetNext(a: ActiveWorkout, it: LiveItem): LiveItem | null {
 export function checkPR(a: ActiveWorkout, exId: string, st: LiveSet): string | null {
   const w = Number(st.weight) || 0, r = Number(st.reps) || 0;
   if (!w || !r) return null;
+  if (a.equipmentAdjusted || a.trainingKind === 'crossfit') return null;
   const b = exerciseBests(exId, a.id);
   let e1Best = b.e1rm, wBest = b.weight;
   for (const it of a.items) {
@@ -488,7 +531,7 @@ function routineItemsFrom(items: LiveItem[], r: Routine): RoutineItem[] {
 
 export function updateRoutineFromWorkout(a: ActiveWorkout) {
   const r = a.routineId ? routine(a.routineId) : null;
-  if (!r) return;
+  if (!r || a.equipmentAdjusted || a.adaptationDeload) return;
   const copy = deepClone(r);
   copy.items = routineItemsFrom(a.items, r);
   saveRoutine(copy);
@@ -503,7 +546,10 @@ export function saveWorkout(a: ActiveWorkout): Workout {
     startedAt: a.startedAt,
     endedAt: Date.now(),
     durationSec: Math.round(elapsedSec(a)),
-    notes: '',
+    notes: a.adaptationNotes ?? '',
+    plannedSessionId: a.plannedSessionId,
+    trainingKind: a.trainingKind,
+    equipmentAdjusted: a.equipmentAdjusted,
     deload: a.adaptationDeload || deloadActive() || undefined,
     items: a.items
       .map((it) => ({
@@ -530,7 +576,7 @@ export function saveWorkout(a: ActiveWorkout): Workout {
   };
 
   const prs: NonNullable<Workout['prs']> = [];
-  for (const it of record.items) {
+  for (const it of a.equipmentAdjusted || a.trainingKind === 'crossfit' ? [] : record.items) {
     const b = exerciseBests(it.exerciseId, a.id);
     let top1 = 0, topW = 0, vol = 0;
     for (const s of it.sets) {
@@ -558,6 +604,7 @@ export function saveWorkout(a: ActiveWorkout): Workout {
 function weekCounts(): Map<number, number> {
   const m = new Map<number, number>();
   for (const w of L.workouts) {
+    if (w.trainingKind && w.trainingKind !== 'strength') continue;
     const k = weekStart(w.startedAt);
     m.set(k, (m.get(k) || 0) + 1);
   }
@@ -566,6 +613,8 @@ function weekCounts(): Map<number, number> {
 
 /** Your setting, else the median of the last 8 trained weeks, 2–6. */
 export function weeklyGoal(): number {
+  const program = usePlanning.getState().data.combinedProgram;
+  if (program?.enabled) return program.slots.filter(s => s === 'strength').length;
   if (L.settings.weeklyGoal) return L.settings.weeklyGoal;
   const m = weekCounts();
   const cur = weekStart(Date.now());
@@ -596,14 +645,19 @@ export function weekStreak(): number {
 
 export function workoutsThisWeek(): number {
   const ws = weekStart(Date.now());
-  return L.workouts.filter((w) => w.startedAt >= ws).length;
+  return L.workouts.filter((w) => (!w.trainingKind || w.trainingKind === 'strength') && w.startedAt >= ws).length;
 }
 
 /** Routines are a rotation: next is the one after the routine done most recently. */
 export function nextRoutine(): Routine | null {
-  const list = routines().filter((r) => r.items.length);
+  const data = usePlanning.getState().data;
+  const plans = plannedSessions(data, R.plans, today(), today());
+  const matches = matchSessions(plans, completedSessions(L.workouts, R.activities, data));
+  const scheduled = plans.find(s => s.kind === 'strength' && s.routineId && s.status !== 'skipped' && !matches.has(s.id));
+  if (scheduled?.routineId && routine(scheduled.routineId)) return routine(scheduled.routineId);
+  const list = routines().filter((r) => r.items.length && !r.bundledKey?.startsWith('life:hybrid:crossfit:') && (!data.combinedProgram?.enabled || data.combinedProgram.routineIds.includes(r.id)));
   if (!list.length) return null;
-  const last = workouts().find((w) => w.routineId && routine(w.routineId));
+  const last = workouts().find((w) => (!w.trainingKind || w.trainingKind === 'strength') && w.routineId && list.some(r => r.id === w.routineId));
   if (!last) return list[0];
   const i = list.findIndex((r) => r.id === last.routineId);
   return list[(i + 1) % list.length];

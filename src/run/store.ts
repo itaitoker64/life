@@ -1,3 +1,4 @@
+import { effectiveCoachPlans } from '../training/combined';
 import { plannedSessions } from '../planning/model';
 import { usePlanning } from '../planning/store';
 import { addDays } from '../lib/dates';
@@ -96,11 +97,13 @@ export function plansBetween(from: string, to: string): CoachingPlan[] {
 }
 
 export function planFor(date: string): CoachingPlan | null {
-  const original = R.plans.find(p => p.plan_date === date);
-  const sessions = plannedSessions(usePlanning.getState().data, R.plans, date, date);
+  const data = usePlanning.getState().data;
+  const effective = effectiveCoachPlans(data.combinedProgram, data.programHistory, R.plans, date, date, [], data.overrides.map(o => o.id));
+  const original = effective.find(p => p.plan_date === date);
+  const sessions = plannedSessions(data, R.plans, date, date);
   const session = sessions.find(s => !!s.coachDate);
   if (session) {
-    const source = R.plans.find(p => p.plan_date === session.coachDate);
+    const source = effectiveCoachPlans(data.combinedProgram, data.programHistory, R.plans, session.coachDate!, session.coachDate!, [], data.overrides.map(o => o.id)).find(p => p.plan_date === session.coachDate);
     if (source && session.adjustment?.mode === 'reduce') {
       const factor = session.adjustment.factor ?? 0.7;
       const easy = latestAssessment()?.training_paces?.easy;
@@ -126,8 +129,12 @@ export function upcomingRaces(): Race[] {
 }
 
 export function setPlanStatus(plan: CoachingPlan, status: PlanStatus) {
-  const baseline = R.plans.find(p => p.id === plan.id);
-  if (!baseline) return;
+  let baseline = R.plans.find(p => p.id === plan.id);
+  if (!baseline) {
+    if (!usePlanning.getState().data.combinedProgram?.enabled) return;
+    baseline = { ...plan, plan_date: plan.id };
+    R.plans.push(baseline);
+  }
   baseline.status = status;
   plan.status = status;
   saveDoc(C.plans, baseline.id, baseline).catch(fail);
@@ -267,7 +274,7 @@ export async function recalibratePlan(): Promise<CoachAssessment> {
     const loadMetrics = computeLoadMetrics(activities, today);
     const { hr_max: hrMax, hr_rest: hrRest } = R.profile;
     const races = upcomingRaces();
-    const prevPlan = plansBetween(today, weekEnd);
+    const prevPlan = R.plans.filter(p => p.plan_date >= today && p.plan_date <= weekEnd);
     const previousVdot = R.assessments.find((a) => a.vdot != null && a.vdot_source !== 'default')?.vdot ?? null;
 
     const goal = races.find((r) => r.priority === 'A' && r.target_time_s) ?? races.find((r) => r.target_time_s);

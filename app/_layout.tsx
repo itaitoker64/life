@@ -124,6 +124,9 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="settings" options={{ title: 'הגדרות' }} />
+        <Stack.Screen name="training/plan" options={{ title: 'תוכנית משולבת' }} />
+        <Stack.Screen name="training/spontaneous" options={{ title: 'חדר כושר מזדמן' }} />
+        <Stack.Screen name="training/crossfit" options={{ title: 'קרוספיט' }} />
         <Stack.Screen name="reminders" options={{ title: 'תזכורות' }} />
         <Stack.Screen name="weight" options={{ title: 'מגמת משקל' }} />
         <Stack.Screen name="expenditure" options={{ title: 'הוצאה קלורית' }} />
