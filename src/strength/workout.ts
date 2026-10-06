@@ -193,7 +193,7 @@ export function resumeFinished(w: Workout) {
     })),
   };
   const r = a.routineId ? routine(a.routineId) : null;
-  if (r) {
+  if (r && !w.deload) {
     for (const ri of r.items) {
       const it = a.items.find((x) => x.exerciseId === ri.exerciseId);
       if (!it) {

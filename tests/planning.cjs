@@ -222,3 +222,10 @@ test('running detail uses the reduced plan while completion preserves its baseli
   run.setPlanStatus(reduced, 'completed');
   assert.equal(baseline.status, 'completed'); assert.equal(saved.duration_min, 50); assert.equal(saved.plan_date, '2026-10-07');
 });
+test('resuming a recovery workout does not restore the intentionally removed sets', () => {
+  const state = { active: null };
+  const scoped = loader({ 'expo-notifications': {}, '../run/store': { R: { plans: [] } }, '../planning/store': {}, '../planning/model': {}, './coach': {}, './store': { L: state, routine: () => ({ items: [{ exerciseId: 'squat', sets: Array.from({ length: 3 }, () => ({ type: 'normal', weight: 100, reps: 6 })) }] }), defaultRepRange: () => ({ min: 5, max: 8 }), persist: { active: () => {} }, emit: () => {} } });
+  const workout = scoped('src/strength/workout.ts');
+  workout.resumeFinished({ id: 'recovery', name: 'Recovery', routineId: 'legs', startedAt: Date.now(), durationSec: 1200, deload: true, items: [{ exerciseId: 'squat', sets: [{ type: 'normal', weight: 90, reps: 6 }] }] });
+  assert.equal(state.active.items[0].sets.length, 1); assert.equal(state.active.adaptationDeload, true);
+});
