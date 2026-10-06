@@ -99,7 +99,9 @@ ${JSON.stringify(responseJsonSchema)}` }],
           }),
         });
       } catch (e) {
-        lastErr = new GeminiError('אין חיבור לאינטרנט, או ש-Gemini לא זמין כרגע.', 0);
+        // Show the underlying reason; "no connection" alone hid a bad-header problem before.
+        const why = e instanceof Error ? e.message : String(e);
+        lastErr = new GeminiError(`לא הצלחתי להתחבר ל-Gemini (${why.slice(0, 120)}). בדקו חיבור לאינטרנט.`, 0);
         break;
       } finally {
         clearTimeout(timeout);

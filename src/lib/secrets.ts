@@ -16,12 +16,19 @@ const GEMINI_KEY = 'gemini_api_key';
 const ICU_KEY = 'intervals_api_key';
 const ICU_ATHLETE = 'intervals_athlete_id';
 
-export function getApiKey(): Promise<string | null> {
-  return SecureStore.getItemAsync(GEMINI_KEY);
+// Keys pasted from Hebrew text / Word often carry invisible direction marks or spaces; Android's
+// HTTP client then rejects the request header outright. Keep only characters a key can contain.
+export function cleanKey(key: string): string {
+  return key.replace(/[^A-Za-z0-9_\-]/g, '');
+}
+
+export async function getApiKey(): Promise<string | null> {
+  const k = await SecureStore.getItemAsync(GEMINI_KEY);
+  return k ? cleanKey(k) || null : null;
 }
 
 export function setApiKey(key: string): Promise<void> {
-  return SecureStore.setItemAsync(GEMINI_KEY, key.trim());
+  return SecureStore.setItemAsync(GEMINI_KEY, cleanKey(key));
 }
 
 export function clearApiKey(): Promise<void> {
@@ -30,12 +37,12 @@ export function clearApiKey(): Promise<void> {
 
 export async function getIntervalsCreds(): Promise<{ apiKey: string; athleteId: string } | null> {
   const [apiKey, athleteId] = await Promise.all([SecureStore.getItemAsync(ICU_KEY), SecureStore.getItemAsync(ICU_ATHLETE)]);
-  return apiKey ? { apiKey, athleteId: athleteId || '0' } : null;
+  return apiKey ? { apiKey: cleanKey(apiKey), athleteId: cleanKey(athleteId || '') || '0' } : null;
 }
 
 export async function setIntervalsCreds(apiKey: string, athleteId: string): Promise<void> {
-  await SecureStore.setItemAsync(ICU_KEY, apiKey.trim());
-  await SecureStore.setItemAsync(ICU_ATHLETE, athleteId.trim() || '0');
+  await SecureStore.setItemAsync(ICU_KEY, cleanKey(apiKey));
+  await SecureStore.setItemAsync(ICU_ATHLETE, cleanKey(athleteId) || '0');
 }
 
 export async function clearIntervalsCreds(): Promise<void> {
