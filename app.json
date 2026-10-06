@@ -1,69 +1,84 @@
-﻿{
-    "expo":  {
-                 "name":  "MacroFactor",
-                 "slug":  "macrofactor",
-                 "version":  "1.0.0",
-                 "scheme":  "macrofactor",
-                 "orientation":  "portrait",
-                 "icon":  "./assets/icon.png",
-                 "userInterfaceStyle":  "light",
-                 "ios":  {
-                             "supportsTablet":  false,
-                             "infoPlist":  {
-                                               "NSCameraUsageDescription":  "Scan barcodes and photograph food to log it.",
-                                               "NSPhotoLibraryUsageDescription":  "Pick food photos to log them."
-                                           }
-                         },
-                 "android":  {
-                                 "adaptiveIcon":  {
-                                                      "backgroundColor":  "#E6F4FE",
-                                                      "foregroundImage":  "./assets/android-icon-foreground.png",
-                                                      "backgroundImage":  "./assets/android-icon-background.png",
-                                                      "monochromeImage":  "./assets/android-icon-monochrome.png"
-                                                  },
-                                 "predictiveBackGestureEnabled":  false,
-                                 "permissions":  [
-                                                     "android.permission.CAMERA",
-                                                     "android.permission.RECORD_AUDIO",
-                                                     "android.permission.CAMERA",
-                                                     "android.permission.RECORD_AUDIO"
-                                                 ]
-                             },
-                 "web":  {
-                             "favicon":  "./assets/favicon.png",
-                             "bundler":  "metro"
-                         },
-                 "plugins":  [
-                                 "expo-router",
-                                 "expo-sqlite",
-                                 "expo-secure-store",
-                                 [
-                                     "expo-camera",
-                                     {
-                                         "cameraPermission":  "Allow $(PRODUCT_NAME) to scan barcodes and photograph food.",
-                                         "recordAudioAndroid":  false,
-                                         "barcodeScannerEnabled":  true
-                                     }
-                                 ],
-                                 [
-                                     "expo-image-picker",
-                                     {
-                                         "photosPermission":  "Allow $(PRODUCT_NAME) to pick food photos.",
-                                         "cameraPermission":  "Allow $(PRODUCT_NAME) to photograph food."
-                                     }
-                                 ],
-                                 "expo-font"
-                             ],
-                 "experiments":  {
-                                     "typedRoutes":  true
-                                 },
-                 "extra":  {
-                               "router":  {
-
-                                          }
-                           },
-                 "runtimeVersion":  {
-                                        "policy":  "sdkVersion"
-                                    }
-             }
+{
+  "expo": {
+    "name": "Life",
+    "slug": "macrofactor",
+    "version": "1.0.0",
+    "scheme": "life",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "צילום ברקודים ומנות אוכל.",
+        "NSPhotoLibraryUsageDescription": "בחירת תמונות של אוכל."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0a0c10",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE",
+        "android.permission.SCHEDULE_EXACT_ALARM"
+      ],
+      "package": "com.life.app",
+      "softwareKeyboardLayoutMode": "resize"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Life צריכה גישה למצלמה כדי לסרוק ברקודים ולצלם אוכל.",
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Life צריכה גישה לתמונות כדי לזהות אוכל.",
+          "cameraPermission": "Life צריכה גישה למצלמה כדי לצלם אוכל."
+        }
+      ],
+      "expo-font",
+      "expo-sharing",
+      [
+        "expo-localization",
+        {
+          "supportsRTL": true,
+          "forcesRTL": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#4f8dff"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {}
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "backgroundColor": "#0a0c10"
+  }
 }

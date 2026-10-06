@@ -1,38 +1,21 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
-import { z } from 'zod';
+// Food photo analysis and nutrition-label reading with Gemini (free tier, the user's own key).
 import * as ImageManipulator from 'expo-image-manipulator';
+import { z } from 'zod';
 import { cacheLabel } from '../db/foods';
 import { recordAiUsage } from '../db/usage';
+import { MissingApiKeyError, describeGeminiError, generateJson, type GeminiUsage } from './gemini';
 import { getApiKey } from './secrets';
 
-const MODEL = 'claude-sonnet-5';
-// USD per million tokens for MODEL; used only for the in-app usage estimate.
-const PRICE_IN = 2;
-const PRICE_OUT = 10;
+export { MissingApiKeyError };
 
-// Image tokens scale with pixel area (~w×h/750), so the long edge is the main cost lever.
 // A plate of food is recognisable at 768 px; small label text needs a bit more.
 const PHOTO_EDGE = 768;
-const LABEL_EDGE = 1024;
+const LABEL_EDGE = 1280;
 
 export interface ImageAsset {
   uri: string;
   width: number;
   height: number;
-}
-
-export class MissingApiKeyError extends Error {
-  constructor() {
-    super('No Anthropic API key saved. Add one in the More tab.');
-  }
-}
-
-async function client(): Promise<Anthropic> {
-  const apiKey = await getApiKey();
-  if (!apiKey) throw new MissingApiKeyError();
-  // The key is the user's own, kept in the device keychain; there is no server to proxy through.
-  return new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 }
 
 export async function hasApiKey(): Promise<boolean> {
@@ -48,15 +31,13 @@ async function toJpegBase64(img: ImageAsset, maxEdge: number): Promise<string> {
   }
   const ref = await ctx.renderAsync();
   const out = await ref.saveAsync({ format: ImageManipulator.SaveFormat.JPEG, compress: 0.8, base64: true });
-  if (!out.base64) throw new Error('Failed to encode image');
+  if (!out.base64) throw new Error('לא הצלחתי לקודד את התמונה');
   return out.base64;
 }
 
-async function logUsage(kind: 'photo' | 'label', usage: Anthropic.Usage) {
-  const input = usage.input_tokens + (usage.cache_creation_input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0);
-  const output = usage.output_tokens;
-  const cost = (input * PRICE_IN + output * PRICE_OUT) / 1_000_000;
-  await recordAiUsage(kind, MODEL, input, output, cost).catch(() => {});
+// Gemini's free tier costs nothing; tokens are still recorded so usage is visible.
+async function logUsage(kind: 'photo' | 'label', u: GeminiUsage) {
+  await recordAiUsage(kind, u.model, u.input, u.output, 0).catch(() => {});
 }
 
 const PhotoIngredient = z.object({
@@ -82,38 +63,29 @@ const PhotoResult = z.object({
 export type PhotoDishResult = z.infer<typeof PhotoDish>;
 
 export async function analyzeFoodPhoto(img: ImageAsset, hint?: string): Promise<z.infer<typeof PhotoResult>> {
-  const anthropic = await client();
   const data = await toJpegBase64(img, PHOTO_EDGE);
-  const response = await anthropic.messages.parse({
-    model: MODEL,
-    max_tokens: 3000,
-    output_config: { format: zodOutputFormat(PhotoResult), effort: 'low' },
+  const { data: result, usage } = await generateJson({
+    schema: PhotoResult,
     system:
-      'You are a nutrition assistant inside a calorie-tracking app. Identify each distinct dish in the photo and ' +
-      'break it into the ingredients a recipe for it would list, including the ones you cannot see directly but that ' +
-      'are almost certainly there: cooking oil or butter, cream, cheese, sauces, dressings, sugar, breading. Estimate ' +
-      'grams of each ingredient in the portion shown using visual cues (plate size, utensils, packaging) and give its ' +
-      'calories and macros from standard nutrition data. Skip ingredients with negligible calories such as salt, ' +
-      'spices, herbs and water. A single-ingredient food, like an apple, is a dish with one ingredient. Be realistic, ' +
-      'not conservative. If the photo has no food, return an empty dishes array.',
-    messages: [
-      {
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } },
-          { type: 'text', text: hint?.trim() ? `Context from the user: ${hint.trim()}` : 'Analyze this meal.' },
-        ],
-      },
+      'You are a nutrition assistant inside a calorie-tracking app used in Israel. Identify each distinct dish in the ' +
+      'photo and break it into the ingredients a recipe for it would list, including the ones you cannot see directly ' +
+      'but that are almost certainly there: cooking oil or butter, cream, cheese, sauces, dressings, tahini, sugar, ' +
+      'breading. Estimate grams of each ingredient in the portion shown using visual cues (plate size, utensils, ' +
+      'packaging) and give its calories and macros from standard nutrition data. Skip ingredients with negligible ' +
+      'calories such as salt, spices, herbs and water. A single-ingredient food, like an apple, is a dish with one ' +
+      'ingredient. Be realistic, not conservative. Write dish names, ingredient names and notes in Hebrew. If the photo ' +
+      'has no food, return an empty dishes array.',
+    parts: [
+      { inlineData: { mimeType: 'image/jpeg', data } },
+      { text: hint?.trim() ? `Context from the user: ${hint.trim()}` : 'Analyze this meal.' },
     ],
   });
-  await logUsage('photo', response.usage);
-  if (response.stop_reason === 'refusal') throw new Error('The model declined to analyze this image.');
-  if (!response.parsed_output) throw new Error('Could not read the model response.');
-  return response.parsed_output;
+  await logUsage('photo', usage);
+  return result;
 }
 
 // The model only transcribes what is printed; unit and per-100 g conversions happen in code below,
-// which is exact and lets this call run without extended thinking.
+// which is exact.
 const LabelRaw = z.object({
   readable: z.boolean().describe('False if the nutrition table is too blurry or cropped to read reliably'),
   product_name: z.string().nullable(),
@@ -177,44 +149,22 @@ function normalizeLabel(r: z.infer<typeof LabelRaw>): LabelData {
 }
 
 export async function readNutritionLabel(img: ImageAsset, barcode?: string): Promise<LabelData> {
-  const anthropic = await client();
   const data = await toJpegBase64(img, LABEL_EDGE);
-  const response = await anthropic.messages.parse({
-    model: MODEL,
-    max_tokens: 1024,
-    thinking: { type: 'disabled' },
-    output_config: { format: zodOutputFormat(LabelRaw), effort: 'low' },
+  const { data: raw, usage } = await generateJson({
+    schema: LabelRaw,
+    temperature: 0,
     system:
       'You transcribe nutrition facts tables from product packaging photos. Labels may be in any language, including ' +
       'Hebrew. Copy the numbers exactly as printed; do not convert units or recompute anything. Report the product ' +
-      'name and brand if visible anywhere in the photo.',
-    messages: [
-      {
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } },
-          { type: 'text', text: 'Transcribe this nutrition label.' },
-        ],
-      },
-    ],
+      'name and brand if visible anywhere in the photo, in the language printed.',
+    parts: [{ inlineData: { mimeType: 'image/jpeg', data } }, { text: 'Transcribe this nutrition label.' }],
   });
-  await logUsage('label', response.usage);
-  if (response.stop_reason === 'refusal') throw new Error('The model declined to read this image.');
-  if (!response.parsed_output) throw new Error('Could not read the model response.');
-  const label = normalizeLabel(response.parsed_output);
+  await logUsage('label', usage);
+  const label = normalizeLabel(raw);
   if (barcode && label.readable) await cacheLabel(barcode, label);
   return label;
 }
 
 export function describeAiError(err: unknown): string {
-  if (err instanceof MissingApiKeyError) return err.message;
-  if (err instanceof Anthropic.AuthenticationError) return 'The API key was rejected. Check it in the More tab.';
-  if (err instanceof Anthropic.PermissionDeniedError) return 'This key has no access. Check your Anthropic console.';
-  if (err instanceof Anthropic.BadRequestError && /credit|balance/i.test(err.message))
-    return 'Your Anthropic account has no credit. Add some under Billing at console.anthropic.com.';
-  if (err instanceof Anthropic.RateLimitError) return 'Rate limited by the API. Try again in a moment.';
-  if (err instanceof Anthropic.APIConnectionError) return 'Could not reach the API. Check your connection.';
-  if (err instanceof Anthropic.APIError) return `API error ${err.status}: ${err.message}`;
-  if (err instanceof Error) return err.message;
-  return 'Something went wrong.';
+  return describeGeminiError(err);
 }

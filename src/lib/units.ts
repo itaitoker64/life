@@ -9,11 +9,11 @@ export function displayToKg(v: number, units: Units): number {
 }
 
 export function weightLabel(units: Units): string {
-  return units === 'metric' ? 'kg' : 'lb';
+  return units === 'metric' ? 'ק"ג' : 'lb';
 }
 
 export function cmToDisplay(cm: number, units: Units): string {
-  if (units === 'metric') return `${Math.round(cm)} cm`;
+  if (units === 'metric') return `${Math.round(cm)} ס"מ`;
   const totalIn = cm / 2.54;
   const ft = Math.floor(totalIn / 12);
   const inch = Math.round(totalIn - ft * 12);

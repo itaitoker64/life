@@ -1,5 +1,7 @@
 export type ISODate = string; // YYYY-MM-DD
 
+export const LOCALE = 'he-IL';
+
 export function toISODate(d: Date): ISODate {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -29,10 +31,10 @@ export function daysBetween(a: ISODate, b: ISODate): number {
 
 export function formatDateLabel(s: ISODate): string {
   const t = today();
-  if (s === t) return 'Today';
-  if (s === addDays(t, -1)) return 'Yesterday';
-  if (s === addDays(t, 1)) return 'Tomorrow';
-  return parseISODate(s).toLocaleDateString(undefined, {
+  if (s === t) return 'היום';
+  if (s === addDays(t, -1)) return 'אתמול';
+  if (s === addDays(t, 1)) return 'מחר';
+  return parseISODate(s).toLocaleDateString(LOCALE, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -40,9 +42,21 @@ export function formatDateLabel(s: ISODate): string {
 }
 
 export function formatShortDate(s: ISODate): string {
-  return parseISODate(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return parseISODate(s).toLocaleDateString(LOCALE, { month: 'short', day: 'numeric' });
 }
 
 export function isMonday(s: ISODate): boolean {
   return parseISODate(s).getDay() === 1;
+}
+
+export function formatLongDate(s: ISODate): string {
+  return parseISODate(s).toLocaleDateString(LOCALE, { weekday: 'long', month: 'long', day: 'numeric' });
+}
+
+export function weekdayShort(s: ISODate): string {
+  return parseISODate(s).toLocaleDateString(LOCALE, { weekday: 'short' });
+}
+
+export function weekdayNarrow(s: ISODate): string {
+  return ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'][parseISODate(s).getDay()];
 }

@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 import { seedFoods } from './seed';
 
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 8;
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -160,6 +160,21 @@ async function migrate(db: SQLite.SQLiteDatabase) {
     await db.execAsync(`
       ALTER TABLE food_log ADD COLUMN components TEXT;
       PRAGMA user_version = 7;
+    `);
+  }
+
+  // Strength (ported from Lift) and running (ported from Stride) keep their records as JSON
+  // documents, mirroring the shapes those apps used.
+  if (version < 8) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS docs (
+        collection TEXT NOT NULL,
+        id TEXT NOT NULL,
+        data TEXT NOT NULL,
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (collection, id)
+      );
+      PRAGMA user_version = 8;
     `);
   }
 }
