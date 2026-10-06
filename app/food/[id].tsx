@@ -51,7 +51,7 @@ export default function FoodDetail() {
       fiber: food.fiber != null ? food.fiber * k : null,
     });
     bump();
-    router.dismissTo('/(tabs)/log');
+    router.dismissTo('/(tabs)/nutrition');
   }
 
   function remove() {

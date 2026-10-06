@@ -5,6 +5,21 @@ const SCHEMA_VERSION = 8;
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
+// SQLite has one connection; two overlapping withTransactionAsync calls fail with "cannot start a
+// transaction within a transaction". Every transaction goes through this queue.
+let txChain: Promise<unknown> = Promise.resolve();
+export function serialTransaction<T>(db: SQLite.SQLiteDatabase, fn: () => Promise<T>): Promise<T> {
+  const run = () =>
+    new Promise<T>((resolve, reject) => {
+      db.withTransactionAsync(async () => {
+        resolve(await fn());
+      }).catch(reject);
+    });
+  const p = txChain.then(run, run);
+  txChain = p.catch(() => {});
+  return p;
+}
+
 export function getDb(): Promise<SQLite.SQLiteDatabase> {
   if (!dbPromise) {
     dbPromise = SQLite.openDatabaseAsync('macrofactor.db').then(async (db) => {

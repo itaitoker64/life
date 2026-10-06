@@ -61,7 +61,7 @@ export function RunHero({ plan, compact }: { plan: CoachingPlan; compact?: boole
         ) : (
           <>
             <Text style={[font.tiny, { marginTop: 10 }]}>טווח קצב יעד (דק׳/ק״מ)</Text>
-            <PaceRange fast={plan.target_pace_fast_sec_km} slow={plan.target_pace_slow_sec_km} style={{ color: colors.text, fontSize: 34, fontWeight: '900', textAlign: 'left' }} />
+            <PaceRange fast={plan.target_pace_fast_sec_km} slow={plan.target_pace_slow_sec_km} style={{ color: colors.text, fontSize: 34, fontWeight: '900' }} />
             <Row style={{ gap: spacing.md, marginTop: 10 }}>
               <HeroStat icon="time-outline" label="משך" value={plan.duration_min ?? '–'} unit="דק׳" />
               <HeroStat icon="navigate-outline" label="מרחק" value={plan.distance_km ?? '–'} unit="ק״מ" />

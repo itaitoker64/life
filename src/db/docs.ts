@@ -1,4 +1,4 @@
-import { getDb } from './index';
+import { getDb, serialTransaction } from './index';
 
 export async function loadCollection<T>(collection: string): Promise<T[]> {
   const db = await getDb();
@@ -38,7 +38,7 @@ export async function saveDocs(collection: string, items: Array<{ id: string }>)
   if (!items.length) return;
   const db = await getDb();
   const now = Date.now();
-  await db.withTransactionAsync(async () => {
+  await serialTransaction(db, async () => {
     for (const it of items) {
       await db.runAsync(
         'INSERT OR REPLACE INTO docs (collection, id, data, updated_at) VALUES (?, ?, ?, ?)',

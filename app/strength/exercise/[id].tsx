@@ -111,7 +111,7 @@ export default function ExerciseDetail() {
                 <Text style={[font.body, { fontWeight: '700' }]}>{fmtDate(w.startedAt, { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
                 <Text style={font.tiny}>{relDay(w.startedAt)}</Text>
               </Row>
-              <Text style={[font.small, { marginTop: 4, writingDirection: 'ltr', textAlign: 'right' }]}>
+              <Text style={[font.small, { marginTop: 4 }]}>
                 {sets.length ? sets.map((s) => `${fmtNum(fmtW(s.weight))}×${fmtNum(s.reps)}`).join('   ') : 'אין סטים שהושלמו'}
               </Text>
             </Card>
@@ -157,7 +157,7 @@ export default function ExerciseDetail() {
           autoFocus
           placeholder="למשל: מושב בגובה 4, אחיזה רחבה"
           placeholderTextColor={colors.faint}
-          style={{ color: colors.text, backgroundColor: colors.elev2, borderRadius: 12, padding: 12, minHeight: 80, textAlign: 'right', textAlignVertical: 'top' }}
+          style={{ color: colors.text, backgroundColor: colors.elev2, borderRadius: 12, padding: 12, minHeight: 80, textAlignVertical: 'top' }}
         />
       </Sheet>
     </Screen>

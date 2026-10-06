@@ -154,7 +154,7 @@ export default function WorkoutDetail() {
           multiline={edit === 'note'}
           placeholder={edit === 'note' ? 'איך היה?' : ''}
           placeholderTextColor={colors.faint}
-          style={{ color: colors.text, backgroundColor: colors.elev2, borderRadius: 12, padding: 12, minHeight: edit === 'note' ? 80 : undefined, textAlign: 'right', textAlignVertical: 'top' }}
+          style={{ color: colors.text, backgroundColor: colors.elev2, borderRadius: 12, padding: 12, minHeight: edit === 'note' ? 80 : undefined, textAlignVertical: 'top' }}
         />
       </Sheet>
     </Screen>

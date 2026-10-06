@@ -173,7 +173,7 @@ export default function WorkoutScreen() {
               setNameDraft(a.name);
               touch();
             }}
-            style={{ color: colors.text, fontSize: 17, fontWeight: '800', paddingVertical: 2, textAlign: 'right' }}
+            style={{ color: colors.text, fontSize: 17, fontWeight: '800', paddingVertical: 2 }}
           />
           <Text style={[font.tiny, { color: colors.primary, fontWeight: '700' }]}>{fmtClock(elapsedSec(a))}</Text>
         </View>
@@ -232,7 +232,7 @@ export default function WorkoutScreen() {
           <Row style={{ paddingHorizontal: spacing.lg, paddingTop: 10, gap: spacing.sm }}>
             <View style={{ flex: 1 }}>
               <Text style={font.tiny}>מנוחה</Text>
-              <Text style={{ color: colors.text, fontSize: 30, fontWeight: '900', writingDirection: 'ltr', textAlign: 'right' }}>{fmtClock(Math.ceil(restLeft))}</Text>
+              <Text style={{ color: colors.text, fontSize: 30, fontWeight: '900' }}>{fmtClock(Math.ceil(restLeft))}</Text>
             </View>
             <DockBtn label="−15" onPress={() => (bumpRest(a, -15), emit())} />
             <DockBtn label="+15" onPress={() => (bumpRest(a, 15), emit())} />
@@ -551,7 +551,7 @@ function ExerciseCard({
           }}
           placeholder="הערה לאימון הזה…"
           placeholderTextColor={colors.faint}
-          style={{ color: colors.text, backgroundColor: colors.elev2, borderRadius: radius.sm, paddingHorizontal: 10, paddingVertical: 6, marginTop: 8, textAlign: 'right' }}
+          style={{ color: colors.text, backgroundColor: colors.elev2, borderRadius: radius.sm, paddingHorizontal: 10, paddingVertical: 6, marginTop: 8 }}
         />
       ) : null}
 
@@ -802,7 +802,7 @@ function ExerciseCard({
           multiline
           placeholder="למשל: מושב בגובה 4"
           placeholderTextColor={colors.faint}
-          style={{ color: colors.text, backgroundColor: colors.elev2, borderRadius: radius.md, padding: 12, minHeight: 80, textAlign: 'right', textAlignVertical: 'top' }}
+          style={{ color: colors.text, backgroundColor: colors.elev2, borderRadius: radius.md, padding: 12, minHeight: 80, textAlignVertical: 'top' }}
         />
       </Sheet>
       {stallSheet ? <StallSheet a={a} it={it} onClose={() => setStallSheet(false)} /> : null}

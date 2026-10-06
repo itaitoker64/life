@@ -114,7 +114,7 @@ export default function Photo() {
     }
     bump();
     setBusy(false);
-    router.dismissTo('/(tabs)/log');
+    router.dismissTo('/(tabs)/nutrition');
   }
 
   const totals = sumIngredients((dishes ?? []).filter((d) => d.include).flatMap((d) => keptIngredients(d.ingredients)));

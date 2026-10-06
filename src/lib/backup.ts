@@ -1,6 +1,6 @@
 // Whole-app backup: the nutrition tables plus every JSON document (strength, running) as one
 // JSON snapshot. Used for the cloud backup (Supabase) and for a manual backup file.
-import { getDb } from '../db';
+import { getDb, serialTransaction } from '../db';
 
 const TABLES = ['profile', 'weight_entries', 'foods', 'food_log', 'expenditure_history', 'settings', 'docs'] as const;
 
@@ -26,7 +26,7 @@ export async function exportSnapshot(): Promise<Snapshot> {
 export async function importSnapshot(s: Snapshot): Promise<void> {
   if (!s || s.app !== 'life' || !s.tables) throw new Error('הקובץ לא נראה כמו גיבוי של Life');
   const db = await getDb();
-  await db.withTransactionAsync(async () => {
+  await serialTransaction(db, async () => {
     for (const t of TABLES) {
       const rows = s.tables[t];
       if (!Array.isArray(rows)) continue;

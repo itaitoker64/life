@@ -79,7 +79,7 @@ export default function Summary() {
       {w.items.map((it, i) => (
         <Card key={i} style={{ paddingVertical: 10 }}>
           <Text style={font.h3}>{exerciseName(it.exerciseId)}</Text>
-          <Text style={[font.small, { marginTop: 4, writingDirection: 'ltr', textAlign: 'right' }]}>
+          <Text style={[font.small, { marginTop: 4 }]}>
             {it.sets.map((s) => `${s.type === 'warmup' ? 'W ' : ''}${fmtNum(fmtW(s.weight))}×${fmtNum(s.reps)}`).join('   ')}
           </Text>
         </Card>

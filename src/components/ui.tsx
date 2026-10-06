@@ -412,7 +412,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 12,
     minHeight: TAP,
   },
-  input: { flex: 1, paddingVertical: 10, fontSize: 16, color: colors.text, textAlign: 'right' },
+  input: { flex: 1, paddingVertical: 10, fontSize: 16, color: colors.text },
   suffix: { ...font.small, marginStart: 6 },
   segmented: {
     flexDirection: 'row',

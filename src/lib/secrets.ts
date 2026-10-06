@@ -1,4 +1,15 @@
-import * as SecureStore from 'expo-secure-store';
+import * as Secure from 'expo-secure-store';
+import { Platform } from 'react-native';
+
+// The browser preview has no keychain; fall back to localStorage there (development only).
+const SecureStore =
+  Platform.OS === 'web'
+    ? {
+        getItemAsync: async (k: string) => globalThis.localStorage?.getItem(k) ?? null,
+        setItemAsync: async (k: string, v: string) => globalThis.localStorage?.setItem(k, v),
+        deleteItemAsync: async (k: string) => globalThis.localStorage?.removeItem(k),
+      }
+    : Secure;
 
 // All keys are the user's own and stay in the device keychain.
 const GEMINI_KEY = 'gemini_api_key';

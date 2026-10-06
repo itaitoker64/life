@@ -217,12 +217,14 @@ function markCompletedRuns() {
 
 /** Sync if the last one is older than `maxAgeMin` (used on app open). */
 export async function syncIfStale(maxAgeMin = 30) {
-  if (!(await hasIntervals())) return;
-  const last = R.profile.last_sync_at ? Date.parse(R.profile.last_sync_at) : 0;
-  if (Date.now() - last < maxAgeMin * 60_000) return;
   try {
+    if (!(await hasIntervals())) return;
+    const last = R.profile.last_sync_at ? Date.parse(R.profile.last_sync_at) : 0;
+    if (Date.now() - last < maxAgeMin * 60_000) return;
     await syncIntervals();
-  } catch {}
+  } catch (e) {
+    console.warn('run sync failed', e);
+  }
 }
 
 // ---------------- plan recalibration (was Stride's recalibrate-plan edge function) ----------------

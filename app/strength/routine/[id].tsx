@@ -328,7 +328,6 @@ function inputStyle(extra: object) {
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginBottom: spacing.sm,
-    textAlign: 'right' as const,
     ...extra,
   };
 }
