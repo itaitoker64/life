@@ -1,28 +1,30 @@
-# MacroFactor (personal clone)
+# Life
 
-Nutrition tracker with adaptive expenditure, weekly check-ins, barcode scanning (Open Food Facts + Israeli Ministry of Health database), and AI meal photos / nutrition-label reading.
+אפליקציית אנדרואיד אחת לתזונה, אימוני כוח וריצה. ממשק בעברית, עיצוב כהה.
 
-All data is stored locally on the phone. AI features need your own Anthropic API key (console.anthropic.com), entered in the app under More.
+נבנתה מאיחוד של שלוש אפליקציות:
+- **MacroFactor** (הבסיס): יומן אכילה, ברקוד, צילום AI, משקל, הוצאה קלורית אדפטיבית, צ׳ק-אין שבועי.
+- **Lift**: רוטינות, אימון פעיל עם טיימר מנוחה, יעדי התקדמות, שיאים, מאמן כוח, דילואוד, סופרסטים, סטטיסטיקה.
+- **Stride**: ריצות מ-Garmin דרך intervals.icu, VDOT, אזורי קצב, תוכנית שבועית מבוססת מחקר, מרוצים ותחזיות.
 
-## Run it
+## איך זה בנוי
 
-1. Install Node.js 22+ (https://nodejs.org).
-2. In this folder:
-   ```
-   npm install --legacy-peer-deps
-   npx expo start
-   ```
-3. Install **Expo Go** on your phone, sign in to a free Expo account, then scan the QR code shown in the terminal (phone and computer on the same Wi-Fi). You may need `npx expo login` with the same account on the computer.
+| חלק | איפה |
+|---|---|
+| ממשק | Expo 57 + React Native + expo-router, `app/` |
+| תזונה ומשקל | SQLite (טבלאות MacroFactor), `src/db`, `src/lib` |
+| כוח | `src/strength` — הלוגיקה של Lift, נשמרת כמסמכי JSON בטבלת `docs` |
+| ריצה | `src/run` — המדע והמתכנן של Stride, רצים בטלפון; ריצות נמשכות מ-intervals.icu |
+| AI | Gemini (`src/lib/gemini.ts`) עם מפתח של המשתמש, שמור ב-SecureStore |
+| גיבוי | Supabase של המשתמש (`src/lib/cloud.ts`): טבלת `backups`, שורה אחת למשתמש, RLS |
 
-## Run it without the computer (optional)
+אין שרת משלנו. כל המפתחות (Gemini, intervals.icu) מוזנים באפליקציה ונשמרים בטלפון בלבד.
 
+## פקודות
+
+```bash
+npm install --legacy-peer-deps
+npx tsc --noEmit                                         # בדיקת טיפוסים
+npx eas-cli build -p android --profile preview           # APK חדש (כשמשנים חבילות נייטיב)
+npx eas-cli update --channel production -m "תיאור"       # עדכון לטלפון בלי התקנה מחדש
 ```
-npm install -g eas-cli
-eas login
-eas init
-eas update:configure
-eas update --branch production --environment production --message "first"
-```
-Then open the project from Expo Go → Profile → Projects.
-
-For an Android app you can install directly: `eas build -p android --profile preview` (free tier).
