@@ -7,6 +7,7 @@ import { ActivityIndicator, AppState, I18nManager, Platform, View } from 'react-
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ToastHost } from '../src/components/sheet';
 import { autoBackup, initCloud } from '../src/lib/cloud';
+import { syncHealthWeights } from '../src/lib/health';
 import { initRun, recalibrateIfStale, syncIfStale, useRun } from '../src/run/store';
 import { initPlanning, usePlanning } from '../src/planning/store';
 import { syncReminders } from '../src/planning/reminders';
@@ -56,6 +57,7 @@ export default function RootLayout() {
       }
       await syncIfStale();
       await recalibrateIfStale();
+      syncHealthWeights().then((n) => n && useApp.getState().bump()).catch(() => {});
     })().catch((e) => console.error('init failed', e));
   }, [init]);
 
@@ -65,6 +67,7 @@ export default function RootLayout() {
       if (s === 'active') {
         syncAdaptations().then(syncReminders).catch(e => console.warn('training sync failed', e));
         syncIfStale().then(recalibrateIfStale).catch(e => console.warn('run sync failed', e));
+        syncHealthWeights().then((n) => n && useApp.getState().bump()).catch(() => {});
       }
       if (s === 'background') autoBackup();
     });

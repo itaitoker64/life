@@ -44,7 +44,7 @@ Verify the Expo account has access to:
 - Update channel: `production` (both existing build profiles use this channel)
 - Environment: `production` (required by current EAS CLI for SDK 57)
 - Android package: `com.life.app`
-- Runtime policy: `sdkVersion`
+- Runtime policy: `fingerprint`
 
 After publishing, retain the returned update group ID and dashboard URL and verify Android, runtime, and production channel. On the phone, reopen Life with internet access, allow the update to download, and reopen again to use it. Check **אימון → יומן**, **התקדמות**, and **הגדרות → תזכורות**.
 

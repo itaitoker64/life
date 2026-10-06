@@ -15,3 +15,8 @@ GitHub (`itaitoker64/life`) runs `.github/workflows/eas-update.yml`, which runs
 4. Push to `main` → the update reaches the phone. The user reopens Life twice to apply it.
 
 If the Action fails, read its log, fix, push again.
+
+## Runtime compatibility
+`runtimeVersion` uses the **fingerprint** policy: an update only reaches APKs whose native
+code matches. If a change adds/changes native modules, the Action still publishes, but the
+phone will not receive it until a new APK is built and installed.

@@ -24,6 +24,7 @@ import { useApp } from '../src/state/store';
 import { L, setSettings, useLiftVersion, wipeLift } from '../src/strength/store';
 import { fmtClock } from '../src/strength/utils';
 import { weeklyGoal } from '../src/strength/workout';
+import { HealthCard } from '../src/components/HealthCard';
 import { colors, font, spacing } from '../src/theme';
 
 export default function Settings() {
@@ -223,6 +224,8 @@ export default function Settings() {
         </View>
         <Button title="שמירת דופק" variant="secondary" onPress={saveHr} />
       </Card>
+
+      <HealthCard />
 
       <SectionTitle>אימוני כוח</SectionTitle>
       <Card>

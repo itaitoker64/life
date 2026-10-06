@@ -17,6 +17,8 @@ import { hasIntervals, latestAssessment, planFor, useRunVersion } from '../../sr
 import { useApp } from '../../src/state/store';
 import { useLiftVersion } from '../../src/strength/store';
 import { kgToDisplay, weightLabel } from '../../src/lib/units';
+import { carbTip } from '../../src/lib/fueling';
+import { stepsToday } from '../../src/lib/health';
 import { chevronForward, colors, font, radius, spacing } from '../../src/theme';
 
 function greeting() {
@@ -38,6 +40,7 @@ export default function Today() {
   const [wt, setWt] = useState<WeightSeries | null>(null);
   const [weighed, setWeighed] = useState(false);
   const [icu, setIcu] = useState(true);
+  const [steps, setSteps] = useState<number | null>(null);
   const t = today();
 
   useFocusEffect(
@@ -51,6 +54,7 @@ export default function Today() {
         setWt(w);
         setWeighed(!!todayW);
         setIcu(connected);
+        stepsToday().then((s) => alive && setSteps(s));
       })();
       return () => {
         alive = false;
@@ -65,6 +69,7 @@ export default function Today() {
   const left = profile.target_kcal - kcal;
   const lastTrend = wt?.trend.filter((v) => v != null).slice(-1)[0] ?? null;
   const params = { date: t, meal: 'snack' };
+  const fuel = carbTip(run, lastTrend);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'left', 'right']}>
@@ -113,6 +118,12 @@ export default function Today() {
             <QuickBtn icon="barcode-outline" label="ברקוד" onPress={() => router.push({ pathname: '/food/scan', params })} />
             <QuickBtn icon="sparkles-outline" label="צילום AI" onPress={() => router.push({ pathname: '/food/photo', params })} />
           </Row>
+          {fuel ? (
+            <Row style={{ gap: 8, marginTop: spacing.md, padding: 10, borderRadius: radius.md, backgroundColor: colors.successSoft, alignItems: 'flex-start' }}>
+              <Ionicons name="flash-outline" size={16} color={colors.carbs} />
+              <Text style={[font.small, { flex: 1, color: colors.text }]}>{fuel.text}</Text>
+            </Row>
+          ) : null}
         </Card>
 
         {/* ---- strength ---- */}
@@ -150,6 +161,7 @@ export default function Today() {
                 </Text>
               </View>
             </Row>
+            {steps != null ? <Text style={[font.small, { marginTop: 4 }]}>{steps.toLocaleString('he-IL')} צעדים היום</Text> : null}
             {wt && wt.dates.length > 1 ? (
               <View style={{ marginTop: spacing.sm }}>
                 <TrendChart
