@@ -11,7 +11,9 @@
       "supportsTablet": false,
       "infoPlist": {
         "NSCameraUsageDescription": "צילום ברקודים ומנות אוכל.",
-        "NSPhotoLibraryUsageDescription": "בחירת תמונות של אוכל."
+        "NSPhotoLibraryUsageDescription": "בחירת תמונות של אוכל.",
+        "ExpoLocalization_supportsRTL": true,
+        "ExpoLocalization_forcesRTL": true
       }
     },
     "android": {
@@ -26,7 +28,13 @@
         "android.permission.CAMERA",
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.VIBRATE",
-        "android.permission.SCHEDULE_EXACT_ALARM"
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE",
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.RECORD_AUDIO"
       ],
       "package": "com.life.app",
       "softwareKeyboardLayoutMode": "resize"
@@ -76,11 +84,18 @@
     "extra": {
       "router": {},
       "supabaseUrl": "https://naozjqwpfkszvvclotau.supabase.co",
-      "supabaseKey": "sb_publishable_8jsJ9WnqXps6dUEmvDFNlQ_vCbvm_kH"
+      "supabaseKey": "sb_publishable_8jsJ9WnqXps6dUEmvDFNlQ_vCbvm_kH",
+      "eas": {
+        "projectId": "0e6e7768-0598-4bfa-b8fa-ab6715e0d8f4"
+      }
     },
     "runtimeVersion": {
       "policy": "sdkVersion"
     },
-    "backgroundColor": "#0a0c10"
+    "backgroundColor": "#0a0c10",
+    "owner": "itaitoker64",
+    "updates": {
+      "url": "https://u.expo.dev/0e6e7768-0598-4bfa-b8fa-ab6715e0d8f4"
+    }
   }
 }
