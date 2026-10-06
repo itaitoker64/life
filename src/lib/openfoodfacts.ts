@@ -59,7 +59,7 @@ export async function lookupBarcode(barcode: string): Promise<FoodInput | null> 
     headers: HEADERS,
   });
   if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`Open Food Facts error ${res.status}`);
+  if (!res.ok) throw new Error(`שגיאה מ-Open Food Facts (${res.status})`);
   const json = (await res.json()) as { status?: number; product?: OffProduct };
   if (!json.product || json.status === 0) return null;
   const food = toFood({ ...json.product, code: json.product.code ?? barcode });
@@ -72,7 +72,7 @@ async function runSearch(query: string, limit: number, israelOnly: boolean): Pro
     `&lc=he&page_size=${limit}&fields=${FIELDS}`;
   if (israelOnly) url += '&tagtype_0=countries&tag_contains_0=contains&tag_0=israel';
   const res = await fetch(url, { headers: HEADERS });
-  if (!res.ok) throw new Error(`Open Food Facts error ${res.status}`);
+  if (!res.ok) throw new Error(`שגיאה מ-Open Food Facts (${res.status})`);
   const json = (await res.json()) as { products?: OffProduct[] };
   return (json.products ?? []).map(toFood).filter((f): f is FoodInput => f != null);
 }

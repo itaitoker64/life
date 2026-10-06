@@ -74,7 +74,9 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {}
+      "router": {},
+      "supabaseUrl": "https://naozjqwpfkszvvclotau.supabase.co",
+      "supabaseKey": "sb_publishable_8jsJ9WnqXps6dUEmvDFNlQ_vCbvm_kH"
     },
     "runtimeVersion": {
       "policy": "sdkVersion"

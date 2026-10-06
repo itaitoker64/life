@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { ActivityIndicator, AppState, I18nManager, Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ToastHost } from '../src/components/sheet';
+import { autoBackup, initCloud } from '../src/lib/cloud';
 import { initRun, recalibrateIfStale, syncIfStale } from '../src/run/store';
 import { useApp } from '../src/state/store';
 import { initLift, useLift } from '../src/strength/store';
@@ -35,7 +36,7 @@ export default function RootLayout() {
   useEffect(() => {
     (async () => {
       await init();
-      await Promise.all([initLift(), initRun()]);
+      await Promise.all([initLift(), initRun(), initCloud().catch(() => {})]);
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('rest', {
           name: 'טיימר מנוחה',
@@ -53,6 +54,7 @@ export default function RootLayout() {
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
       if (s === 'active') syncIfStale().then(recalibrateIfStale);
+      if (s === 'background') autoBackup();
     });
     return () => sub.remove();
   }, []);

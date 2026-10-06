@@ -117,7 +117,7 @@ export default function Weight() {
       <View style={{ padding: spacing.lg }}>
         <Legend
           items={[
-            { label: 'משקל במשקל', color: colors.weight, kind: 'faint' },
+            { label: 'שקילה בפועל', color: colors.weight, kind: 'faint' },
             { label: 'מגמת משקל', color: colors.weight, kind: 'line' },
           ]}
         />
