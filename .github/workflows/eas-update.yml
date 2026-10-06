@@ -1,0 +1,30 @@
+# Every push to main: typecheck, run tests, publish an Android OTA update to the phone.
+name: Publish update
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: eas-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - name: Generate typed routes
+        run: CI=1 timeout 60 npx expo start --port 8090 > /dev/null 2>&1 || true
+      - run: npm run check
+      - run: TZ=Asia/Jerusalem npm run test:planning
+      - name: Publish
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx eas-cli update --channel production --environment production --platform android --message "${{ github.event.head_commit.message || 'manual publish' }}" --non-interactive
