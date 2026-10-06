@@ -108,7 +108,7 @@ export function planFor(date: string): CoachingPlan | null {
         duration_min: source.duration_min === null ? null : Math.max(1, Math.round(source.duration_min * factor)),
         distance_km: source.distance_km === null ? null : Math.round(source.distance_km * factor * 10) / 10,
         target_pace_fast_sec_km: easy?.fast ?? null, target_pace_slow_sec_km: easy?.slow ?? null, hr_zone: 2,
-        description: 'ריצה בקצב שמאפשר שיחה, ללא אינטרוולים או האצות.', adaptation_note: session.adjustment.reason };
+        description: 'ריצה בקצב שמאפשר שיחה, ללא אינטרוולים או האצות.', rationale: 'העומס שבוצע בפועל חופף לריצה המתוכננת. אימון קל וקצר יותר מפנה מקום להתאוששות תוך שמירה על רצף האימונים.', adjustment_sec: 0, adaptation_note: session.adjustment.reason };
     }
     if (source) return { ...source, plan_date: date, status: session.status ?? source.status, adaptation_note: session.adjustment?.reason ?? source.adaptation_note };
   }
