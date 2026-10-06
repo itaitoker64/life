@@ -851,8 +851,10 @@ function TargetRow({ a, it, onPress }: { a: ActiveWorkout; it: LiveItem; onPress
   let why: string;
   if (!plan) {
     const prefilled = it.sets.some((st) => st.type !== 'warmup' && Number(st.weight) > 0);
-    main = a.equipmentAdjusted ? 'ציוד אחר — בוחרים משקל מחדש' : a.trainingKind === 'crossfit' ? 'סבב טכני — בוחרים עומס נשלט' : prefilled ? 'משקל מהרוטינה — בודקים אותו בסט הראשון' : 'פעם ראשונה — מוצאים את המשקל';
-    why = `בחרו משקל שאפשר לעשות איתו ${it.repMin}–${it.repMax} חזרות ועוד 1–3 בטנק`;
+    const estimated = !a.equipmentAdjusted && a.trainingKind !== 'crossfit' && it._estimateFrom;
+    const firstWork = it.sets.find((st) => st.type !== 'warmup');
+    main = a.equipmentAdjusted ? 'ציוד אחר — בוחרים משקל מחדש' : a.trainingKind === 'crossfit' ? 'סבב טכני — בוחרים עומס נשלט' : estimated && firstWork ? `הערכה ראשונה (${unitLabel()}): ${fmtNum(fmtW(Number(firstWork.weight)))}×${it.repMin}` : prefilled ? 'משקל מהרוטינה — בודקים אותו בסט הראשון' : 'פעם ראשונה — מוצאים את המשקל';
+    why = estimated ? `מחושב לפי ${it._estimateFrom}. אם הסט הראשון קל מדי (יותר מ־3 חזרות בטנק) — מעלים; אם כבד — מורידים.` : `בחרו משקל שאפשר לעשות איתו ${it.repMin}–${it.repMax} חזרות ועוד 1–3 בטנק`;
   } else if (plan.counts.deload) {
     main = 'דילואוד: אותו משקל, חצי מהסטים';
     why = 'שבוע התאוששות — עוצרים כל סט כשנשארות 3–4 חזרות';

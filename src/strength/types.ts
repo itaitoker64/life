@@ -73,6 +73,8 @@ export interface LiveItem {
   _failCheck?: boolean | 'done';
   _effortIdx?: number | null;
   _showNote?: boolean;
+  /** Name of the logged lift a first-session weight was estimated from. */
+  _estimateFrom?: string;
 }
 
 export interface ActiveWorkout {

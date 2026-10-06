@@ -33,6 +33,7 @@ import {
   workouts,
 } from './store';
 import type { ActiveWorkout, LiveItem, LiveSet, Routine, RoutineItem, Workout } from './types';
+import { estimateStart } from './estimate';
 import { DAY, WEEK, clamp, deepClone, epley1RM, fmtClock, fmtNum, uid, weekStart } from './utils';
 
 export const SET_TYPES: LiveSet['type'][] = ['normal', 'warmup', 'drop', 'fail'];
@@ -63,9 +64,16 @@ function repRangeFor(exId: string, src?: { repMin?: number; repMax?: number }) {
 export function applyTarget(item: LiveItem, exceptWorkoutId: string | null) {
   const plan = progressionPlan(item.exerciseId, item.repMin, item.repMax, exceptWorkoutId);
   if (!plan) {
+    const work = item.sets.filter((s) => !s.done && setGroup(s.type) === 'work');
+    const est = work.length && work.every((s) => !(Number(s.weight) > 0)) ? estimateStart(item.exerciseId, item.repMin) : null;
+    if (est) {
+      for (const s of work) { s.weight = est.weight; s.reps = item.repMin; }
+      item._estimateFrom = est.from;
+    }
     autoWarmups(item);
     return;
   }
+  item._estimateFrom = undefined;
   const pos: Record<string, number> = {};
   for (const s of item.sets) {
     const g = setGroup(s.type);
