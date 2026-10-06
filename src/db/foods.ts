@@ -11,24 +11,37 @@ export async function searchFoods(query: string, limit = 40): Promise<Food[]> {
       limit,
     );
   }
-  const like = `%${q}%`;
-  const prefix = `${q}%`;
-  // Prefix matches rank above substring matches; user foods above the reference database.
-  return db.getAllAsync<Food>(
-    `SELECT * FROM foods
-     WHERE name LIKE ? COLLATE NOCASE OR name_en LIKE ? COLLATE NOCASE OR brand LIKE ? COLLATE NOCASE
-     ORDER BY use_count DESC,
-              (name LIKE ? COLLATE NOCASE OR name_en LIKE ? COLLATE NOCASE) DESC,
-              (source != 'moh') DESC,
-              length(name)
-     LIMIT ?`,
-    like,
-    like,
-    like,
-    prefix,
-    prefix,
-    limit,
-  );
+  // Every word must appear (any order) in the Hebrew name, English name or brand: "חזה עוף" finds
+  // "בשר עוף, חזה …" as well as "שניצל חזה עוף".
+  const tokens = q.split(/[\s,]+/).filter(Boolean).slice(0, 6);
+  const where = tokens.map(() => '(name LIKE ? COLLATE NOCASE OR name_en LIKE ? COLLATE NOCASE OR brand LIKE ? COLLATE NOCASE)').join(' AND ');
+  const args = tokens.flatMap((t) => [`%${t}%`, `%${t}%`, `%${t}%`]);
+  const rows = await db.getAllAsync<Food>(`SELECT * FROM foods WHERE ${where} LIMIT 400`, ...args);
+  return rows
+    .map((f) => ({ f, score: rankFood(f, q, tokens) }))
+    .sort((a, b) => b.score - a.score || a.f.name.length - b.f.name.length)
+    .slice(0, limit)
+    .map((x) => x.f);
+}
+
+// Composite / processed foods sink unless the query asks for them, so the plain item comes first.
+const PROCESSED = ['שניצל', 'נקניק', 'פסטרמה', 'ציפוי', 'במילוי', 'ממולא', 'סלט', 'מוקפצ', 'אטריות', 'ברוטב', 'קטשופ', 'טורטיה', 'פירורי', 'מקדונלדס', 'פיצה', 'כריך', 'עוגת'];
+
+function rankFood(f: Food, q: string, tokens: string[]): number {
+  const name = f.name;
+  const lowerQ = q.toLowerCase();
+  let score = 0;
+  score += Math.min(50, f.use_count * 5); // foods you already log
+  if (f.source !== 'moh') score += 10; // your own / scanned foods
+  if (name === q || f.name_en?.toLowerCase() === lowerQ) score += 40;
+  if (name.startsWith(q) || f.name_en?.toLowerCase().startsWith(lowerQ)) score += 12;
+  else if (tokens.length && name.startsWith(tokens[0])) score += 4;
+  for (const w of PROCESSED) if (name.includes(w) && !q.includes(w)) score -= 30;
+  if (name.includes('מטוגן') && !q.includes('מטוגן')) score -= 6;
+  if (name.includes(' עם ') && !q.includes(' עם ')) score -= 10; // "X with Y" is a dish, not X
+  for (const w of ['מיובש', 'אבקת', 'אבקה']) if (name.includes(w) && !q.includes(w)) score -= 12;
+  score -= name.split(/\s+/).length * 0.5 + (name.match(/,/g)?.length ?? 0);
+  return score;
 }
 
 export async function recentFoods(limit = 20): Promise<Food[]> {

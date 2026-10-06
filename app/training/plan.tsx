@@ -6,7 +6,7 @@ import { addDays, today } from '../../src/lib/dates';
 import { updatePlanning, usePlanning } from '../../src/planning/store';
 import { L, saveRoutine } from '../../src/strength/store';
 import { uid } from '../../src/strength/utils';
-import { ADVANCED_DAY_NAMES, ADVANCED_SLOTS, DEFAULT_SLOTS, KIND_LABEL, RESEARCH, advancedItems, fullBodyItems, crossfitItems, validateProgram, type CombinedProgram } from '../../src/training/combined';
+import { ADVANCED_DAY_NAMES, ADVANCED_ORDER, ADVANCED_SLOTS, DEFAULT_SLOTS, KIND_LABEL, RESEARCH, advancedItems, fullBodyItems, crossfitItems, validateProgram, type CombinedProgram } from '../../src/training/combined';
 import { colors, font } from '../../src/theme';
 const weekdays = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
 export default function TrainingPlan() {
@@ -42,7 +42,7 @@ export default function TrainingPlan() {
         let strengthIndex = 0;
         const newRules = slots.flatMap((kind, weekday) => {
           if (kind === 'rest' || kind === 'run') return [];
-          const routineId = kind === 'strength' ? ids[strengthIndex++ % ids.length] : program.crossfitRoutineId;
+          const routineId = kind === 'strength' ? ids[advanced ? ADVANCED_ORDER[strengthIndex++ % 3] : strengthIndex++ % ids.length] : program.crossfitRoutineId;
           return [{ id: `hybrid:${uid()}:${weekday}`, weekday, kind, title: kind === 'strength' ? L.routines.find(r => r.id === routineId)!.name : level === 'returning' ? 'קרוספיט · טכניקה וקצב נשלט' : 'קרוספיט · WOD מדורג', routineId, startDate: today(), plannedEffort: level === 'advanced' ? 8 : kind === 'crossfit' && level === 'regular' ? 7 : 6, minutes: kind === 'crossfit' ? level === 'returning' ? 30 : 45 : level === 'advanced' ? 65 : 45 }];
         });
         return { ...d, combinedProgram: program, programHistory: [...(d.programHistory ?? []), ...(d.combinedProgram ? [d.combinedProgram] : [])],

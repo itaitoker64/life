@@ -548,6 +548,7 @@ export function saveWorkout(a: ActiveWorkout): Workout {
     durationSec: Math.round(elapsedSec(a)),
     notes: a.adaptationNotes ?? '',
     plannedSessionId: a.plannedSessionId,
+    partial: a.partial || undefined,
     trainingKind: a.trainingKind,
     equipmentAdjusted: a.equipmentAdjusted,
     deload: a.adaptationDeload || deloadActive() || undefined,

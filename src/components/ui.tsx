@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,6 +9,7 @@ import {
   Text,
   TextInput,
   View,
+  type GestureResponderEvent,
   type PressableProps,
   type TextInputProps,
   type ViewProps,
@@ -125,7 +126,25 @@ export function Button({
   const bg =
     variant === 'secondary' ? colors.elev2 : variant === 'good' ? colors.success : variant === 'danger' ? colors.dangerSoft : 'transparent';
   const border = variant === 'ghost' || variant === 'primary' ? 'transparent' : variant === 'danger' ? 'rgba(239,68,68,0.4)' : colors.border;
-  const content = loading ? (
+  // A press whose handler returns a Promise blocks further presses until it settles, so a quick
+  // double tap can never save twice (state updates alone are too slow to stop the second tap).
+  const busyRef = useRef(false);
+  const [running, setRunning] = useState(false);
+  const busy = !!loading || running;
+  const disabled = !!rest.disabled || busy;
+  function handlePress(e: GestureResponderEvent) {
+    if (busyRef.current || disabled) return;
+    const result: unknown = rest.onPress?.(e);
+    if (result && typeof (result as Promise<unknown>).then === 'function') {
+      busyRef.current = true;
+      setRunning(true);
+      (result as Promise<unknown>).finally(() => {
+        busyRef.current = false;
+        setRunning(false);
+      });
+    }
+  }
+  const content = busy ? (
     <ActivityIndicator color={fg} />
   ) : (
     <Row style={{ gap: spacing.sm }}>
@@ -136,7 +155,7 @@ export function Button({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ disabled: !!rest.disabled, busy: !!loading }}
+      accessibilityState={{ disabled, busy }}
       style={({ pressed }) => [
         styles.button,
         size === 'sm' && styles.buttonSm,
@@ -144,6 +163,8 @@ export function Button({
         style as any,
       ]}
       {...rest}
+      disabled={disabled}
+      onPress={handlePress}
     >
       {variant === 'primary' ? (
         <LinearGradient

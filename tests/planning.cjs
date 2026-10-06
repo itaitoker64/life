@@ -470,3 +470,36 @@ test('experienced routines are heavy compounds with blank starting weights', () 
     assert.ok(items.every(i => i.sets.every(s => s.weight === '')));
   }
 });
+
+// ---- audit regressions (2026-10-06) ----
+const { muscleAreas } = load('src/planning/adaptation.ts');
+function advancedWeek(today, doneDays) {
+  const areasOf = items => muscleAreas(items.flatMap(i => { const e = library.find(x => x.id === i.exerciseId); return e ? [e.primary, ...(e.secondary ?? [])] : ['Other']; }));
+  const variants = combined.ADVANCED_ORDER.map(v => ({ id: `r${v}`, items: combined.advancedItems(library, v) }));
+  const program = hybrid({ level: 'advanced', slots: [...combined.ADVANCED_SLOTS], routineIds: variants.map(r => r.id) });
+  const data = emptyPlanning(); data.combinedProgram = program;
+  let k = 0;
+  data.rules = program.slots.flatMap((s, wd) => s === 'strength' ? [rule({ id: `h${wd}`, weekday: wd, routineId: variants[k++].id, plannedEffort: 8, minutes: 65 })] : []);
+  const loads = doneDays.map(([date, i]) => ({ id: `lift:${i}`, date, title: `S${i}`, kind: 'strength', routineId: variants[i].id, minutes: 65, effort: 8, areas: areasOf(variants[i].items) }));
+  setAdaptationProvider(() => ({ today, loads, routineAreas: Object.fromEntries(variants.map(r => [r.id, areasOf(r.items)])), protectedDates: [] }));
+  const coach = [coachPlan({ id: '2026-10-05', plan_date: '2026-10-05', workout_type: 'threshold' }), coachPlan({ id: '2026-10-09', plan_date: '2026-10-09', workout_type: 'long', duration_min: 55 })];
+  try { return plannedSessions(data, coach, today, '2026-10-10'); } finally { setAdaptationProvider(() => undefined); }
+}
+test('experienced week: the quality run stays on Monday after the Sunday session', () => {
+  const plans = advancedWeek('2026-10-05', [['2026-10-04', 0]]);
+  const run = plans.find(p => p.kind === 'run' && p.date === '2026-10-05');
+  assert.ok(run, 'Monday run kept'); assert.equal(run.adjustment, undefined);
+  assert.ok(!plans.some(p => p.date === '2026-10-07'), 'Wednesday stays a rest day');
+});
+test('experienced week: the long run stays on Friday after Thursday full body', () => {
+  const plans = advancedWeek('2026-10-09', [['2026-10-04', 0], ['2026-10-06', 1], ['2026-10-08', 2]]);
+  assert.ok(plans.some(p => p.kind === 'run' && p.date === '2026-10-09' && !p.adjustment), 'Friday long run kept');
+  assert.ok(!plans.some(p => p.date === '2026-10-10'), 'Saturday stays a rest day');
+});
+test('a partial workout is saved but does not complete its planned session', () => {
+  const w = { id: 'p1', name: 'B', routineId: 'routine-a', startedAt: new Date(2026, 9, 4, 18).getTime(), durationSec: 600, notes: '', items: [], plannedSessionId: 's', partial: true };
+  const actualPartial = completedSessions([w], [], emptyPlanning());
+  assert.equal(matchSessions([session()], actualPartial).size, 0);
+  const full = completedSessions([{ ...w, partial: undefined }], [], emptyPlanning());
+  assert.equal(matchSessions([session()], full).size, 1);
+});

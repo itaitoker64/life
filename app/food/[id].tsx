@@ -5,7 +5,7 @@ import { Alert, Pressable, Text, View } from 'react-native';
 import { Button, Card, Field, Row, Screen, Segmented, Stat, parseNum } from '../../src/components/ui';
 import { deleteFood, getFood } from '../../src/db/foods';
 import { addEntry } from '../../src/db/log';
-import { MEAL_OPTS, MEAL_SHORT, type Food, type Meal } from '../../src/db/types';
+import { MEAL_OPTS, MEAL_SHORT, mealForNow, type Food, type Meal } from '../../src/db/types';
 import { today } from '../../src/lib/dates';
 import { useApp } from '../../src/state/store';
 import { colors, font, spacing } from '../../src/theme';
@@ -17,7 +17,7 @@ export default function FoodDetail() {
   const { bump } = useApp();
   const [food, setFood] = useState<Food | null>(null);
   const [grams, setGrams] = useState('100');
-  const [meal, setMeal] = useState<Meal>((mealParam as Meal) || 'snack');
+  const [meal, setMeal] = useState<Meal>((mealParam as Meal) || mealForNow());
   const [mode, setMode] = useState<'grams' | 'servings'>('grams');
   const [servings, setServings] = useState('1');
 
@@ -97,7 +97,7 @@ export default function FoodDetail() {
         {food.serving_g ? (
           <Segmented<'grams' | 'servings'>
             options={[
-              { value: 'servings', label: `מנות (${food.serving_name ?? `${food.serving_g} ג׳`})` },
+              { value: 'servings', label: `מנות (${food.serving_name ? `${food.serving_name} · ` : ''}${food.serving_g} ג׳)` },
               { value: 'grams', label: 'גרמים' },
             ]}
             value={mode}
@@ -105,7 +105,7 @@ export default function FoodDetail() {
           />
         ) : null}
         {mode === 'servings' ? (
-          <Field label="מנות" keyboardType="decimal-pad" value={servings} onChangeText={setServings} autoFocus selectTextOnFocus />
+          <Field label="מנות" keyboardType="decimal-pad" value={servings} onChangeText={setServings} autoFocus selectTextOnFocus suffix={`= ${Math.round(g)} ג׳`} />
         ) : (
           <Field label="כמות" keyboardType="decimal-pad" value={grams} onChangeText={setGrams} suffix="ג׳" autoFocus selectTextOnFocus />
         )}

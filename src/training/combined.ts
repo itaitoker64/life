@@ -110,6 +110,9 @@ const ADVANCED_DAYS: Array<{ name: string; rx: Rx[] }> = [
     ['Leg Press', 3, 10, 15, 120], ['Cable Fly', 3, 12, 15, 60], ['Face Pull', 3, 12, 20, 60], ['Cable Crunch', 3, 10, 15, 60]] },
 ];
 export const ADVANCED_DAY_NAMES = ADVANCED_DAYS.map((d) => d.name);
+/** Weekly order of ADVANCED_DAYS on the strength slots: upper (Sun), lower (Tue), full (Thu) —
+ *  a fresh leg day never sits right before the quality run. */
+export const ADVANCED_ORDER = [1, 0, 2];
 /** Blank weights: the first session finds working weights, then the progression coach takes over. */
 export function advancedItems(exercises: Exercise[], variant: number): RoutineItem[] {
   return ADVANCED_DAYS[variant % ADVANCED_DAYS.length].rx.flatMap(([name, sets, repMin, repMax, rest]) => {

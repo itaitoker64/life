@@ -89,6 +89,8 @@ export interface ActiveWorkout {
   plannedSessionId?: string;
   trainingKind?: 'strength' | 'run' | 'crossfit';
   adaptationNotes?: string;
+  /** Finished with under half the working sets: saved, but does not complete the planned session. */
+  partial?: boolean;
   items: LiveItem[];
   rest: { endsAt: number; duration: number; notificationId?: string | null } | null;
 }
@@ -128,6 +130,7 @@ export interface Workout {
   equipmentAdjusted?: boolean;
   plannedSessionId?: string;
   trainingKind?: 'strength' | 'run' | 'crossfit';
+  partial?: boolean;
   items: WorkoutItem[];
   prs?: PR[];
 }

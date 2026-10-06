@@ -86,7 +86,8 @@ export function plannedSessions(data: PlanningData, coachPlans: CoachingPlan[], 
   };
   const coach = effectiveCoachPlans(data.combinedProgram, data.programHistory, coachPlans, from, to, data.overrides.filter(o => o.id.startsWith('coach:')).map(o => o.originalDate), data.overrides.map(o => o.id)).filter(p => p.workout_type !== 'rest').map(p => ({
     id: `coach:${p.id}`, date: p.plan_date, coachDate: p.plan_date,
-    kind: 'run' as const, title: p.title, status: p.status, minutes: p.duration_min ?? undefined, plannedEffort: ['easy', 'recovery'].includes(p.workout_type) ? 4 : 7,
+    kind: 'run' as const, title: p.title, status: p.status, minutes: p.duration_min ?? undefined, // A long run is long but at conversation pace: aerobic effort, not a hard session.
+    plannedEffort: ['easy', 'recovery', 'long'].includes(p.workout_type) ? 4 : 7,
   }));
   // The coach's detailed session replaces a generic recurring run for that day.
   const coachDates = new Set(coach.flatMap(s => overrides.get(s.id)?.cancelled ? [] : [s.date, overrides.get(s.id)?.date ?? s.date]));
@@ -120,7 +121,8 @@ export interface CompletedSession {
 export function completedSessions(workouts: Workout[], activities: Activity[], data?: PlanningData): CompletedSession[] {
   return [
     ...(data?.alternateWorkouts ?? []).filter(w => !workouts.some(a => `lift:${a.id}` === w.id) && !activities.some(a => `activity:${a.id}` === w.id)).map(w => ({ id: w.id, date: w.date, kind: w.kind ?? (/wod|קרוספיט/i.test(w.title) ? 'crossfit' as const : 'strength' as const), title: w.title, replacementId: w.replacementId, km: 0, minutes: w.minutes })),
-    ...workouts.map(w => ({ id: `lift:${w.id}`, workoutId: w.id, date: toISODate(new Date(w.startedAt)), kind: w.trainingKind ?? 'strength' as const, title: w.name, replacementId: w.plannedSessionId ?? data?.alternateWorkouts?.find(a => a.id === `lift:${w.id}`)?.replacementId, routineId: w.routineId ?? undefined, km: 0, minutes: (w.durationSec ?? 0) / 60 })),
+    // A partial workout is an extra session: its replacement id matches no plan, so the plan stays open.
+    ...workouts.map(w => ({ id: `lift:${w.id}`, workoutId: w.id, date: toISODate(new Date(w.startedAt)), kind: w.trainingKind ?? 'strength' as const, title: w.name, replacementId: w.partial ? `partial:${w.id}` : w.plannedSessionId ?? data?.alternateWorkouts?.find(a => a.id === `lift:${w.id}`)?.replacementId, routineId: w.partial ? undefined : w.routineId ?? undefined, km: 0, minutes: (w.durationSec ?? 0) / 60 })),
     ...activities.map(a => ({ id: `activity:${a.id}`, date: toISODate(new Date(a.start_time)), kind: 'run' as const, title: a.name ?? 'ריצה', replacementId: data?.alternateWorkouts?.find(w => w.id === `activity:${a.id}`)?.replacementId, km: a.distance_m / 1000, minutes: (a.duration_s ?? 0) / 60 })),
   ];
 }

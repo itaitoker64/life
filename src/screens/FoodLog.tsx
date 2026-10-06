@@ -8,7 +8,7 @@ import { MacroBar } from '../components/charts';
 import { DateHeader } from '../components/DateHeader';
 import { Button, Card, Row, styles as ui } from '../components/ui';
 import { entriesForDate, moveEntry } from '../db/log';
-import { MEALS, parseComponents, type LogEntry, type Meal } from '../db/types';
+import { MEALS, mealForNow, parseComponents, type LogEntry, type Meal } from '../db/types';
 import { useApp } from '../state/store';
 import { colors, font, radius, shadow, spacing } from '../theme';
 
@@ -132,8 +132,8 @@ export function FoodLog() {
             <MacroBar label="שומן" value={entries.reduce((s, e) => s + e.fat, 0)} max={profile?.target_fat ?? 0} color={colors.fat} />
             </>}
             <Row style={{ gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-              <Button title="הוספת אוכל" style={{ flexGrow: 1 }} onPress={() => router.push({ pathname: '/food/search', params: { date: selectedDate, meal: 'snack' } })} />
-              <Button title="צילום ארוחה" variant="secondary" style={{ flexGrow: 1 }} onPress={() => router.push({ pathname: '/food/photo', params: { date: selectedDate, meal: 'snack' } })} />
+              <Button title="הוספת אוכל" style={{ flexGrow: 1 }} onPress={() => router.push({ pathname: '/food/search', params: { date: selectedDate, meal: mealForNow() } })} />
+              <Button title="צילום ארוחה" variant="secondary" style={{ flexGrow: 1 }} onPress={() => router.push({ pathname: '/food/photo', params: { date: selectedDate, meal: mealForNow() } })} />
             </Row>
           </Card>
 

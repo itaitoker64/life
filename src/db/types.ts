@@ -5,6 +5,14 @@ import type { ISODate } from '../lib/dates';
 export type FoodSource = 'user' | 'off' | 'ai' | 'moh';
 export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 export const MEALS: Meal[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+/** The meal a quick "add food" most likely belongs to, by the time of day. */
+export function mealForNow(d = new Date()): Meal {
+  const h = d.getHours() + d.getMinutes() / 60;
+  if (h >= 5 && h < 11) return 'breakfast';
+  if (h >= 11.5 && h < 16) return 'lunch';
+  if (h >= 18 && h < 22) return 'dinner';
+  return 'snack';
+}
 export const MEAL_SHORT: Record<Meal, string> = { breakfast: 'בוקר', lunch: 'צהריים', dinner: 'ערב', snack: 'נשנוש' };
 export const MEAL_OPTS = MEALS.map((m) => ({ value: m, label: MEAL_SHORT[m] }));
 

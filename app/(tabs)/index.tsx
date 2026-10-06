@@ -9,7 +9,7 @@ import { HomeWeek, TodayWorkout, useHomeTraining } from '../../src/components/Ho
 import { AlternateWorkout } from '../../src/components/AlternateWorkout';
 import { Card, IconButton, Row, SectionTitle } from '../../src/components/ui';
 import { totalsForDate } from '../../src/db/log';
-import type { DayTotals } from '../../src/db/types';
+import { mealForNow, type DayTotals } from '../../src/db/types';
 import { weightForDate } from '../../src/db/weight';
 import { weightInsights, weightSeries, type WeightSeries } from '../../src/lib/analytics';
 import { checkinDue } from '../../src/lib/coach';
@@ -58,7 +58,7 @@ export default function Today() {
   const kcal = totals?.kcal ?? 0;
   const left = profile.target_kcal - kcal;
   const lastTrend = wt?.trend.filter((v) => v != null).slice(-1)[0] ?? null;
-  const params = { date: t, meal: 'snack' };
+  const params = { date: t, meal: mealForNow() };
   const weeklyChange = wt ? weightInsights(wt.all).weeklyChangeKg : null;
   const fuel = carbTip(run, lastTrend);
 

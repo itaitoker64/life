@@ -12,7 +12,7 @@ import {
 } from '../../src/components/IngredientList';
 import { Button, Card, Field, Row, Screen, Segmented, Stat } from '../../src/components/ui';
 import { addEntry } from '../../src/db/log';
-import { MEAL_OPTS, MEAL_SHORT, type Meal } from '../../src/db/types';
+import { MEAL_OPTS, MEAL_SHORT, mealForNow, type Meal } from '../../src/db/types';
 import { MissingApiKeyError, analyzeFoodPhoto, describeAiError, hasApiKey, type ImageAsset } from '../../src/lib/ai';
 import { today } from '../../src/lib/dates';
 import { useApp } from '../../src/state/store';
@@ -37,7 +37,7 @@ export default function Photo() {
   const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [meal, setMeal] = useState<Meal>((mealParam as Meal) || 'snack');
+  const [meal, setMeal] = useState<Meal>((mealParam as Meal) || mealForNow());
   const [keyReady, setKeyReady] = useState<boolean | null>(null);
 
   useEffect(() => {

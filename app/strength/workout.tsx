@@ -130,8 +130,31 @@ export default function WorkoutScreen() {
       ]);
       return;
     }
+    const total = a!.items.reduce((n, it) => n + it.sets.length, 0);
+    const pending = total - doneSets;
+    if (pending > 0) {
+      const working = a!.items.flatMap((it) => it.sets.filter((s) => s.type !== 'warmup'));
+      const partial = working.filter((s) => s.done).length < working.length / 2;
+      Alert.alert(
+        `${pending} סטים לא סומנו`,
+        partial
+          ? 'בוצעו פחות ממחצית סטי העבודה. האימון יישמר בהיסטוריה, אבל לא ייחשב כהשלמת האימון המתוכנן — הוא יישאר פתוח.'
+          : 'סטים שלא סומנו לא יישמרו. לסיים את האימון?',
+        [
+          { text: 'להמשיך באימון', style: 'cancel' },
+          { text: 'לסיים', onPress: () => proceedFinish(partial) },
+        ],
+      );
+      return;
+    }
+    proceedFinish(false);
+  }
+
+  function proceedFinish(partial: boolean) {
+    a!.partial = partial || undefined;
     const r = a!.routineId ? routine(a!.routineId) : null;
-    const changes = r && !a!.equipmentAdjusted && !a!.adaptationDeload ? routineDiff(r, a!.items) : [];
+    // A partial session must not reshape the routine.
+    const changes = r && !partial && !a!.equipmentAdjusted && !a!.adaptationDeload ? routineDiff(r, a!.items) : [];
     if (!changes.length) return commit();
     setFinishSheet(changes);
   }
