@@ -3,10 +3,12 @@ import type { CoachingPlan } from '../run/types';
 import type { RoutineItem, Exercise } from '../strength/types';
 export type HybridKind = 'strength' | 'run' | 'crossfit';
 export interface CombinedProgram {
-  enabled: boolean; startDate: string; level: 'returning' | 'regular';
+  enabled: boolean; startDate: string; level: 'returning' | 'regular' | 'advanced';
   slots: Array<HybridKind | 'rest'>; routineIds: string[]; crossfitRoutineId?: string;
 }
 export const DEFAULT_SLOTS: CombinedProgram['slots'] = ['strength', 'run', 'crossfit', 'rest', 'strength', 'run', 'rest'];
+// Experienced lifter: lower / upper / full body, a quality run after lower day and a longer easy run.
+export const ADVANCED_SLOTS: CombinedProgram['slots'] = ['strength', 'run', 'strength', 'rest', 'strength', 'run', 'rest'];
 export const KIND_LABEL: Record<HybridKind, string> = { strength: 'כוח', run: 'ריצה', crossfit: 'קרוספיט' };
 export function programKind(program: CombinedProgram | undefined, date: string) {
   return program?.enabled && date >= program.startDate ? program.slots[parseISODate(date).getDay()] ?? 'rest' : null;
@@ -18,6 +20,14 @@ export function combinedRunPlan(program: CombinedProgram | undefined, plan: Coac
   const kind = programKind(program, plan.plan_date);
   if (!kind || plan.workout_type === 'race') return plan;
   if (kind !== 'run') return { ...plan, workout_type: 'rest', title: 'מנוחה מריצה · תוכנית משולבת', description: 'האימון היומי מופיע ביומן המשולב.', duration_min: 0, distance_km: 0 };
+  // Experienced: keep the running engine's prescription (VDOT paces, quality day, long run, ACWR
+  // safety); only fill run days the engine left empty with a steady 40-minute run.
+  if (program!.level === 'advanced') {
+    if (plan.workout_type !== 'rest') return plan;
+    return { ...plan, workout_type: 'easy', title: 'ריצה קלה · 40 דקות', duration_min: 40, distance_km: null, hr_zone: 2,
+      description: '10 דקות קלות · 25 דקות בקצב שיחה · 5 דקות שחרור + 4 האצות של 20 שנ׳.',
+      rationale: 'יום ריצה בתוכנית המשולבת. אחרי סנכרון ריצות התוכנית תקבע מרחק וקצב לפי הכושר שלך.', adjustment_sec: 0 };
+  }
   const returning = program!.level === 'returning';
   const duration = returning ? 25 : 35;
   // Never re-use a threshold/interval pace as an easy pace.
@@ -34,7 +44,8 @@ export function validateProgram(program: CombinedProgram): string[] {
   if (program.slots.length !== 7) return ['נדרשת חלוקה של שבעה ימים.'];
   const count = (kind: string) => program.slots.filter(s => s === kind).length;
   if (count('strength') < 2) errors.push('לשמירת שריר בזמן ירידה במשקל, השאירו לפחות שני אימוני כוח.');
-  if (!count('run') || !count('crossfit')) errors.push('בחרו לפחות יום ריצה אחד ויום קרוספיט אחד.');
+  if (!count('run')) errors.push('בחרו לפחות יום ריצה אחד.');
+  if (!count('crossfit') && program.level !== 'advanced') errors.push('בחרו לפחות יום קרוספיט אחד.');
   if (!count('rest')) errors.push('השאירו לפחות יום מנוחה אחד.');
   if (count('crossfit') > 2) errors.push('בתוכנית הזאת מוגדרים לכל היותר שני ימי קרוספיט עצימים.');
   for (let d = 0; d < 7; d++) {
@@ -81,5 +92,30 @@ export function crossfitItems(exercises: Exercise[], level: CombinedProgram['lev
     const ex = exercises.find(e => e.name === name); if (!ex) return [];
     return [{ exerciseId: ex.id, superset: 'hybrid-circuit', restSec: 60, notes: 'סבב טכני; קצב נשלט, מנוחה לפי הצורך. אין עבודה עד כשל.',
       sets: Array.from({ length: level === 'returning' ? 2 : 3 }, () => ({ type: 'normal' as const, weight: ex.tracking === 'cardio' ? 2 : '' as const, reps: ex.tracking === 'cardio' ? '' as const : 10 })) }];
+  });
+}
+
+type Rx = [name: string, sets: number, repMin: number, repMax: number, rest: number];
+// Experienced lifter in a deficit: heavy compounds keep strength (and muscle) while calories are low;
+// ~12–16 hard sets per muscle per week across three sessions (Schoenfeld 2017; Pelland 2024).
+const ADVANCED_DAYS: Array<{ name: string; rx: Rx[] }> = [
+  { name: 'תחתון · כוח', rx: [
+    ['Back Squat', 4, 5, 8, 180], ['Romanian Deadlift', 3, 6, 10, 150], ['Bulgarian Split Squat', 3, 8, 12, 120],
+    ['Seated Leg Curl', 3, 10, 15, 90], ['Standing Calf Raise', 3, 10, 15, 60], ['Hanging Leg Raise', 3, 10, 15, 60]] },
+  { name: 'עליון · כוח', rx: [
+    ['Bench Press', 4, 5, 8, 180], ['Barbell Row', 4, 6, 10, 150], ['Overhead Press', 3, 6, 10, 150],
+    ['Lat Pulldown', 3, 8, 12, 120], ['Lateral Raise', 3, 12, 20, 60], ['Triceps Pushdown', 2, 10, 15, 60], ['Dumbbell Curl', 2, 10, 15, 60]] },
+  { name: 'גוף מלא · נפח', rx: [
+    ['Deadlift', 3, 4, 6, 180], ['Incline Dumbbell Press', 3, 8, 12, 120], ['Pull-Up', 3, 6, 10, 150],
+    ['Leg Press', 3, 10, 15, 120], ['Cable Fly', 3, 12, 15, 60], ['Face Pull', 3, 12, 20, 60], ['Cable Crunch', 3, 10, 15, 60]] },
+];
+export const ADVANCED_DAY_NAMES = ADVANCED_DAYS.map((d) => d.name);
+/** Blank weights: the first session finds working weights, then the progression coach takes over. */
+export function advancedItems(exercises: Exercise[], variant: number): RoutineItem[] {
+  return ADVANCED_DAYS[variant % ADVANCED_DAYS.length].rx.flatMap(([name, sets, repMin, repMax, rest]) => {
+    const ex = exercises.find((e) => e.name === name); if (!ex) return [];
+    return [{ exerciseId: ex.id, restSec: rest, repMin, repMax,
+      notes: repMax <= 8 ? 'תרגיל מרכזי: 1–2 חזרות ברזרבה. בגירעון קלורי שומרים על המשקל — זה מה ששומר על הכוח.' : '1–2 חזרות ברזרבה; הסט האחרון יכול להגיע קרוב לכשל.',
+      sets: Array.from({ length: sets }, () => ({ type: 'normal' as const, weight: '' as const, reps: repMin })) }];
   });
 }

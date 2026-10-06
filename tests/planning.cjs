@@ -448,3 +448,25 @@ test('CrossFit cardio and gym substitutions use logger minutes rather than the d
   assert.equal(live.sets[0].weight, 2); assert.equal(live.sets[0].reps, '');
   assert.ok(state.active.items.every(i => i.superset === 'spontaneous-circuit'));
 });
+
+test('experienced level: 3 strength + 2 runs is valid without CrossFit', () => {
+  const p = hybrid({ level: 'advanced', slots: [...combined.ADVANCED_SLOTS] });
+  assert.deepEqual(combined.validateProgram(p), []);
+  assert.ok(combined.validateProgram(hybrid({ slots: [...combined.ADVANCED_SLOTS] })).length, 'CrossFit stays required below experienced');
+});
+test('experienced level keeps the running engine plan and fills empty run days', () => {
+  const p = hybrid({ level: 'advanced', slots: [...combined.ADVANCED_SLOTS] });
+  const quality = coachPlan(); // Monday 2026-10-05 is a run slot
+  assert.equal(combined.combinedRunPlan(p, quality), quality);
+  const filled = combined.combinedRunPlan(p, coachPlan({ workout_type: 'rest', duration_min: 0 }));
+  assert.equal(filled.workout_type, 'easy'); assert.equal(filled.duration_min, 40);
+  assert.equal(combined.combinedRunPlan(p, coachPlan({ plan_date: '2026-10-06' })).workout_type, 'rest', 'Tuesday is a strength day');
+});
+test('experienced routines are heavy compounds with blank starting weights', () => {
+  for (let v = 0; v < 3; v++) {
+    const items = combined.advancedItems(library, v);
+    assert.ok(items.length >= 6);
+    assert.ok(items[0].repMax <= 8 && items[0].sets.length >= 3);
+    assert.ok(items.every(i => i.sets.every(s => s.weight === '')));
+  }
+});

@@ -15,7 +15,7 @@ import { R, planFor, useRunVersion } from '../../src/run/store';
 import { L, useLiftVersion } from '../../src/strength/store';
 import { uid } from '../../src/strength/utils';
 import { startSpontaneousWorkout } from '../../src/strength/workout';
-import { fullBodyItems, crossfitItems, KIND_LABEL, type HybridKind } from '../../src/training/combined';
+import { advancedItems, fullBodyItems, crossfitItems, KIND_LABEL, type HybridKind } from '../../src/training/combined';
 import { EQUIPMENT, emptyInventory, tailorWorkout, type EquipmentKey, type GymInventory, type WorkoutDraft } from '../../src/training/equipment';
 import { clearlyVisibleEquipment, inspectGym, type GymPhoto } from '../../src/training/vision';
 import { colors, font } from '../../src/theme';
@@ -73,7 +73,7 @@ export default function Spontaneous() {
     if (!Number.isFinite(duration) || duration < 15 || duration > 120) { setError('בחרו מסגרת זמן של 15–120 דקות.'); return; }
     const routine = source?.routineId ? L.routines.find(r => r.id === source.routineId) : undefined;
     const level = data.combinedProgram?.level ?? 'returning';
-    const items = routine?.items ?? (kind === 'crossfit' ? crossfitItems(L.exercises, level) : kind === 'run' ? [] : fullBodyItems(L.exercises, 0, level));
+    const items = routine?.items ?? (kind === 'crossfit' ? crossfitItems(L.exercises, level === 'advanced' ? 'regular' : level) : kind === 'run' ? [] : level === 'advanced' ? advancedItems(L.exercises, 2) : fullBodyItems(L.exercises, 0, level));
     const effectiveDuration = kind === 'run' && source?.adjustment?.mode === 'reduce' ? Math.min(duration, Math.max(10, Math.round((source.minutes ?? duration) * (source.adjustment.factor ?? 0.7)))) : duration;
     const result = tailorWorkout(items, L.exercises, gym, kind, effectiveDuration);
     if (kind !== 'run' && source?.adjustment?.mode === 'reduce') result.rows = result.rows.map(row => ({ ...row, item: reducedStrengthItems([{ ...row.item, repMin: row.item.repMin ?? 8, repMax: row.item.repMax ?? 12, sets: row.item.sets.map(s => ({ ...s, done: false })) }], source.adjustment!.factor ?? 0.7, L.exercises.filter(e => e.tracking === 'cardio').map(e => e.id))[0] }));

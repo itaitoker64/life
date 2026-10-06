@@ -33,7 +33,7 @@ export function GoalAchievement({ days, totals, selected }: { days: string[]; to
       <Text style={[font.h3, { marginBottom: 14 }]}>אימונים השבוע</Text>
       <GoalBar label="אימוני כוח" value={strength} target={data.combinedProgram?.enabled ? data.combinedProgram.slots.filter(s => s === 'strength').length : weeklyGoal()} unit="אימונים" color={colors.primary} />
       <GoalBar label="קרוספיט" value={crossfit} target={data.combinedProgram?.enabled ? data.combinedProgram.slots.filter(s => s === 'crossfit').length : data.rules.filter(r => r.kind === 'crossfit' && (!r.endDate || r.endDate >= today())).length} unit="אימונים" color={colors.flame} />
-      {program ? <GoalBar label="ריצה / אירובי" value={aerobicMinutes} target={program.slots.filter(s => s === 'run').length * (program.level === 'returning' ? 25 : 35)} unit="דקות" color={colors.run} /> : null}
+      {program ? <GoalBar label="ריצה / אירובי" value={aerobicMinutes} target={program.slots.filter(s => s === 'run').length * (program.level === 'returning' ? 25 : program.level === 'advanced' ? 45 : 35)} unit="דקות" color={colors.run} /> : null}
       <GoalBar label="מרחק ריצה" value={km} target={program ? 0 : runTarget ?? 0} unit="ק״מ" color={colors.run} />
       {program ? <Text style={font.tiny}>יעד החלוקה המשולבת נמדד בזמן. מרחק מוצג רק מריצות שנרשמו, ללא תחליפי אופניים או קרוספיט.</Text> : !runTarget ? <Text style={font.tiny}>יעד המרחק יוצג לאחר יצירת תוכנית ריצה.</Text> : null}
     </Card>

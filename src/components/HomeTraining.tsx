@@ -32,6 +32,8 @@ export function TodayWorkout({ date, training }: { date: string; training: Retur
   const start = useStartWorkout();
   const { ready, session, next, actual, matches, plans } = training;
   const completed = actual.some(a => a.date === date) || plans.some(p => p.date === date && matches.has(p.id));
+  // What was actually done today, e.g. "עליון · כוח · 62 דק׳ + ריצה 5.2 ק״מ".
+  const doneToday = actual.filter(a => a.date === date).map(a => a.kind === 'run' && a.km ? `${a.title} ${a.km.toFixed(1)} ק״מ` : a.minutes ? `${a.title} · ${Math.round(a.minutes)} דק׳` : a.title).join(' + ');
   const active = L.active;
   const meta = session ? kinds[session.kind] : null;
   const journal = () => router.push({ pathname: '/(tabs)/train', params: { tab: 'journal', date } });
@@ -51,7 +53,7 @@ export function TodayWorkout({ date, training }: { date: string; training: Retur
       </View>
       <View style={{ flex: 1 }}><Text style={font.small}>{active ? 'האימון שלך בעיצומו' : 'האימון של היום'}</Text><Text style={[font.h3, { color: meta?.color ?? colors.primary }]}>{active ? 'ממשיכים מאיפה שעצרת' : meta?.label ?? (completed ? 'כל הכבוד על האימון' : 'זמן להתאושש')}</Text></View>
     </Row>
-    <Text style={[font.h1, { marginBottom: 8 }]}>{!ready ? 'טוענים את התוכנית…' : active?.name ?? session?.title ?? (completed ? 'האימונים להיום הושלמו' : 'אין אימון מתוכנן להיום')}</Text>
+    <Text style={[font.h1, { marginBottom: 8 }]}>{!ready ? 'טוענים את התוכנית…' : active?.name ?? session?.title ?? (completed ? doneToday || 'האימונים להיום הושלמו' : 'אין אימון מתוכנן להיום')}</Text>
     <Text style={[font.small, { lineHeight: 21, marginBottom: 18 }]}>{active ? 'הסטים וההתקדמות שלך נשמרו.' : session ? [session.minutes ? `${session.minutes} דקות` : null, session.plannedEffort ? `עצימות מתוכננת ${session.plannedEffort}/10` : null, session.adjustment?.mode === 'reduce' ? 'עומס מופחת' : null].filter(Boolean).join(' · ') || 'האימון שנקבע בתוכנית שלך' : next ? `בהמשך: ${formatDateLabel(next.date)} · ${next.title}` : 'אפשר לבנות שבוע שמשלב כוח, ריצה וקרוספיט.'}</Text>
     {session?.adjustment && !active ? <Text style={[font.small, { color: colors.warning, lineHeight: 21, marginBottom: 16 }]}>{session.adjustment.reason}</Text> : null}
     <Button disabled={!ready} title={active ? 'המשך אימון' : session ? session.kind === 'strength' && session.routineId ? 'התחלת האימון' : 'פתיחת האימון' : next || completed ? 'לצפייה ביומן' : 'בניית התוכנית שלך'} onPress={!active && !session && !next && !completed ? () => router.push('/training/plan') : open} />
