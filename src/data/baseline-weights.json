@@ -1,0 +1,733 @@
+{
+ "app": "lift",
+ "version": 1,
+ "exportedAt": "2026-10-06T21:26:45.968639",
+ "data": {
+  "exercises": [
+   {
+    "id": "cx_db_rdl",
+    "name": "דדליפט רומני במשקולות",
+    "primary": "Hamstrings",
+    "equipment": "Dumbbell",
+    "isCustom": true,
+    "tracking": "weight",
+    "repMin": 8,
+    "repMax": 12,
+    "createdAt": 1790488800000
+   },
+   {
+    "id": "cx_chest_supported_row",
+    "name": "חתירה נתמכת חזה במשקולות",
+    "primary": "Back",
+    "equipment": "Dumbbell",
+    "isCustom": true,
+    "tracking": "weight",
+    "repMin": 8,
+    "repMax": 12,
+    "createdAt": 1790488800000
+   },
+   {
+    "id": "cx_db_upright_row",
+    "name": "חתירה אנכית במשקולות",
+    "primary": "Shoulders",
+    "equipment": "Dumbbell",
+    "isCustom": true,
+    "tracking": "weight",
+    "repMin": 10,
+    "repMax": 15,
+    "createdAt": 1790488800000
+   },
+   {
+    "id": "cx_db_calf_raise",
+    "name": "עליות תאומים במשקולות",
+    "primary": "Calves",
+    "equipment": "Dumbbell",
+    "isCustom": true,
+    "tracking": "weight",
+    "repMin": 10,
+    "repMax": 15,
+    "createdAt": 1790488800000
+   },
+   {
+    "id": "cx_multi_pushdown",
+    "name": "פשיטת מרפקים במולטי-טריינר",
+    "primary": "Triceps",
+    "equipment": "Cable",
+    "isCustom": true,
+    "tracking": "weight",
+    "repMin": 10,
+    "repMax": 15,
+    "createdAt": 1790488800000
+   },
+   {
+    "id": "cx_bicycle_crunch",
+    "name": "אופניים (בטן)",
+    "primary": "Abs",
+    "equipment": "Bodyweight",
+    "isCustom": true,
+    "tracking": "weight",
+    "repMin": 20,
+    "repMax": 40,
+    "createdAt": 1790488800000
+   }
+  ],
+  "routines": [],
+  "measurements": [],
+  "workouts": [
+   {
+    "id": "baseline_home_20260927",
+    "name": "נקודת פתיחה · חדר כושר ביתי",
+    "routineId": null,
+    "startedAt": 1790521200000,
+    "endedAt": 1790525400000,
+    "durationSec": 4200,
+    "notes": "נקודת פתיחה שהוזנה ידנית (3 סטים)",
+    "prs": [],
+    "items": [
+     {
+      "exerciseId": "ex_pull_up",
+      "notes": "משקל תוספת",
+      "restSec": 120,
+      "repMin": 5,
+      "repMax": 8,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 15,
+        "reps": 6,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 15,
+        "reps": 6,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 15,
+        "reps": 6,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "cx_chest_supported_row",
+      "notes": "לכל יד",
+      "restSec": 120,
+      "repMin": 8,
+      "repMax": 12,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 10,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 10,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 10,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "cx_db_upright_row",
+      "notes": "לכל יד",
+      "restSec": 120,
+      "repMin": 10,
+      "repMax": 15,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 12.5,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 12.5,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 12.5,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "ex_incline_dumbbell_press",
+      "notes": "לכל יד",
+      "restSec": 120,
+      "repMin": 6,
+      "repMax": 10,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 8,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 8,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 8,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "ex_arnold_press",
+      "notes": "לכל יד",
+      "restSec": 120,
+      "repMin": 8,
+      "repMax": 12,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 15,
+        "reps": 10,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 15,
+        "reps": 10,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 15,
+        "reps": 10,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "ex_bulgarian_split_squat",
+      "notes": "לכל יד, לכל רגל",
+      "restSec": 120,
+      "repMin": 6,
+      "repMax": 10,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 20,
+        "reps": 8,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 20,
+        "reps": 8,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 20,
+        "reps": 8,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "ex_goblet_squat",
+      "notes": "משקולת בודדת",
+      "restSec": 120,
+      "repMin": 8,
+      "repMax": 12,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "cx_db_rdl",
+      "notes": "לכל יד",
+      "restSec": 120,
+      "repMin": 8,
+      "repMax": 12,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "cx_db_calf_raise",
+      "notes": "לכל יד",
+      "restSec": 120,
+      "repMin": 10,
+      "repMax": 15,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 22.5,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 22.5,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 22.5,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "ex_hammer_curl",
+      "notes": "לכל יד",
+      "restSec": 120,
+      "repMin": 8,
+      "repMax": 12,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 20,
+        "reps": 8,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 20,
+        "reps": 8,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 20,
+        "reps": 8,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "cx_multi_pushdown",
+      "notes": "",
+      "restSec": 120,
+      "repMin": 10,
+      "repMax": 15,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 20,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 20,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 20,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "ex_back_extension",
+      "notes": "משקל גוף",
+      "restSec": 120,
+      "repMin": 12,
+      "repMax": 20,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 0,
+        "reps": 15,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 0,
+        "reps": 15,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 0,
+        "reps": 15,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "ex_hanging_leg_raise",
+      "notes": "משקל גוף",
+      "restSec": 120,
+      "repMin": 10,
+      "repMax": 15,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 0,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 0,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 0,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "cx_bicycle_crunch",
+      "notes": "20 לכל צד",
+      "restSec": 120,
+      "repMin": 20,
+      "repMax": 40,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 0,
+        "reps": 40,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 0,
+        "reps": 40,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 0,
+        "reps": 40,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "baseline_base_20260928",
+    "name": "נקודת פתיחה · חדר כושר בסיס",
+    "routineId": null,
+    "startedAt": 1790607600000,
+    "endedAt": 1790611800000,
+    "durationSec": 4200,
+    "notes": "נקודת פתיחה שהוזנה ידנית (3 סטים)",
+    "prs": [],
+    "items": [
+     {
+      "exerciseId": "ex_bench_press",
+      "notes": "שיא הבלוק",
+      "restSec": 120,
+      "repMin": 3,
+      "repMax": 6,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 100,
+        "reps": 3,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 100,
+        "reps": 3,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 100,
+        "reps": 3,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "ex_dip",
+      "notes": "משקל תוספת",
+      "restSec": 120,
+      "repMin": 6,
+      "repMax": 10,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 8,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 8,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 8,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "ex_arnold_press",
+      "notes": "לכל יד",
+      "restSec": 120,
+      "repMin": 8,
+      "repMax": 12,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 20,
+        "reps": 10,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 20,
+        "reps": 10,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 20,
+        "reps": 10,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "ex_romanian_deadlift",
+      "notes": "מוט",
+      "restSec": 120,
+      "repMin": 8,
+      "repMax": 12,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 75,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 75,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 75,
+        "reps": 12,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "ex_t_bar_row",
+      "notes": "משקל על המכשיר",
+      "restSec": 120,
+      "repMin": 8,
+      "repMax": 12,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 25,
+        "reps": 10,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 25,
+        "reps": 10,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 25,
+        "reps": 10,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "ex_dumbbell_shrug",
+      "notes": "לכל יד",
+      "restSec": 120,
+      "repMin": 10,
+      "repMax": 15,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 10,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 10,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 10,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     },
+     {
+      "exerciseId": "ex_triceps_pushdown",
+      "notes": "",
+      "restSec": 120,
+      "repMin": 10,
+      "repMax": 15,
+      "sets": [
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 10,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 10,
+        "done": true,
+        "effort": "good"
+       },
+       {
+        "type": "normal",
+        "weight": 30,
+        "reps": 10,
+        "done": true,
+        "effort": "good"
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

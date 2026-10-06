@@ -8,6 +8,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ToastHost } from '../src/components/sheet';
 import { autoBackup, initCloud } from '../src/lib/cloud';
 import { syncHealthWeights } from '../src/lib/health';
+import { applyPersonalSeed } from '../src/lib/personalSeed';
 import { initRun, recalibrateIfStale, syncIfStale, useRun } from '../src/run/store';
 import { initPlanning, usePlanning } from '../src/planning/store';
 import { syncReminders } from '../src/planning/reminders';
@@ -52,6 +53,7 @@ export default function RootLayout() {
     (async () => {
       await init();
       await Promise.all([initLift().then(initPlanning), initRun(), initCloud().catch(() => {})]);
+      await applyPersonalSeed().catch((e) => console.warn('personal seed failed', e));
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('rest', {
           name: 'טיימר מנוחה',

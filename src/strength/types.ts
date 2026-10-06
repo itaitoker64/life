@@ -155,6 +155,8 @@ export interface LiftSettings {
   lastDeloadEnd?: number;
   calibrations?: Array<{ t: number; exId: string; gap: number }>;
   bundledRoutines?: string[];
+  /** One-time import of the owner's starting weights (src/data/baseline-weights.json). */
+  baselineImported?: boolean;
 }
 
 export const DEFAULT_SETTINGS: LiftSettings = {
