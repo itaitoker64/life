@@ -179,6 +179,7 @@ export function resumeFinished(w: Workout) {
     resumedAt: Date.now(),
     priorDurationSec: w.durationSec || 0,
     resumed: true,
+    adaptationDeload: w.deload,
     failChecksAssigned: true,
     rest: null,
     items: w.items.map((it) => ({
@@ -230,6 +231,7 @@ export function startFromRoutine(routineId: string) {
     const factor = planned.adjustment.factor ?? 0.7;
     a.name = `${r.name} · עומס מופחת`;
     a.failChecksAssigned = true;
+    a.adaptationDeload = true;
     a.items = reducedStrengthItems(a.items, factor);
     a.items.forEach(autoWarmups);
   }
@@ -502,7 +504,7 @@ export function saveWorkout(a: ActiveWorkout): Workout {
     endedAt: Date.now(),
     durationSec: Math.round(elapsedSec(a)),
     notes: '',
-    deload: deloadActive() || undefined,
+    deload: a.adaptationDeload || deloadActive() || undefined,
     items: a.items
       .map((it) => ({
         exerciseId: it.exerciseId,

@@ -84,6 +84,7 @@ export interface ActiveWorkout {
   priorDurationSec?: number;
   resumed?: boolean;
   failChecksAssigned?: boolean;
+  adaptationDeload?: boolean;
   items: LiveItem[];
   rest: { endsAt: number; duration: number; notificationId?: string | null } | null;
 }
