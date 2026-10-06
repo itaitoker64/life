@@ -120,18 +120,9 @@ export async function initLift(): Promise<void> {
     await persist.settings();
   }
 
-  // Bundled routines are added once per key; deleting one keeps it deleted.
-  const seen = new Set(L.settings.bundledRoutines ?? []);
-  for (const b of bundledRoutines()) {
-    if (seen.has(b.bundledKey)) continue;
-    seen.add(b.bundledKey);
-    if (!L.routines.some((r) => r.bundledKey === b.bundledKey || r.name === b.name)) {
-      const now = Date.now();
-      const r: Routine = { ...b, id: uid(), order: L.routines.length, createdAt: now, updatedAt: now };
-      L.routines.push(r);
-      await persist.routine(r);
-    }
-  }
+  // Bundled routines carry another lifter's weights, so new installs no longer receive them.
+  // Existing copies are left alone; the combined program builds routines for this user.
+  const seen = new Set([...(L.settings.bundledRoutines ?? []), ...bundledRoutines().map((b) => b.bundledKey)]);
   L.settings.bundledRoutines = [...seen];
   await persist.settings();
   useLift.setState((s) => ({ ready: true, version: s.version + 1 }));

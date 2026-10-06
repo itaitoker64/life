@@ -62,7 +62,7 @@ export function TrainingJournal() {
     <Row style={{ gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
       <Button title="שיבוץ אימון" disabled={!ready} onPress={() => setScheduling(true)} />
       <Button title="אימון אחר / WOD" variant="secondary" onPress={() => setLogging(true)} />
-      <Button title={showSettings ? 'סגירת אפשרויות' : 'תוכנית ואפשרויות'} variant="ghost" onPress={() => setShowSettings(v => !v)} />
+      <Button title={showSettings ? 'הסתרה' : 'עוד: תוכנית, צילום, תזכורות'} variant="ghost" onPress={() => setShowSettings(v => !v)} />
     </Row>
     {showSettings ? <>
       <Row style={{ gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>

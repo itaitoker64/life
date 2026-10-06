@@ -844,7 +844,8 @@ function TargetRow({ a, it, onPress }: { a: ActiveWorkout; it: LiveItem; onPress
   let main: string;
   let why: string;
   if (!plan) {
-    main = a.equipmentAdjusted ? 'ציוד אחר — בוחרים משקל מחדש' : a.trainingKind === 'crossfit' ? 'סבב טכני — בוחרים עומס נשלט' : 'פעם ראשונה — מוצאים את המשקל';
+    const prefilled = it.sets.some((st) => st.type !== 'warmup' && Number(st.weight) > 0);
+    main = a.equipmentAdjusted ? 'ציוד אחר — בוחרים משקל מחדש' : a.trainingKind === 'crossfit' ? 'סבב טכני — בוחרים עומס נשלט' : prefilled ? 'משקל מהרוטינה — בודקים אותו בסט הראשון' : 'פעם ראשונה — מוצאים את המשקל';
     why = `בחרו משקל שאפשר לעשות איתו ${it.repMin}–${it.repMax} חזרות ועוד 1–3 בטנק`;
   } else if (plan.counts.deload) {
     main = 'דילואוד: אותו משקל, חצי מהסטים';

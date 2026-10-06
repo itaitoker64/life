@@ -93,21 +93,15 @@ export default function Today() {
         <SectionTitle right={<LinkRowSmall label="ליומן" onPress={() => router.push('/(tabs)/nutrition')} />}>תזונה היום</SectionTitle>
         <Card>
           {loadError ? <Text style={font.small}>לא הצלחנו לטעון את הנתונים. פתחו שוב את המסך לניסיון נוסף.</Text> : !totals ? <Text style={font.small}>טוענים את התזונה…</Text> : <>
-          <Row style={{ justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: spacing.md }}>
-            <View>
-              <Text style={font.label}>{left >= 0 ? 'נשארו היום' : 'מעל היעד'}</Text>
-              <Text style={[font.display, { color: left >= 0 ? colors.text : colors.danger }]}>
-                {Math.abs(Math.round(left))}
-                <Text style={[font.small, { fontWeight: '600' }]}> קק״ל</Text>
-              </Text>
-            </View>
-            <Text style={font.small}>
-              {Math.round(kcal)} / {profile.target_kcal}
+          <View style={{ marginBottom: spacing.md }}>
+            <Text style={font.label}>{left >= 0 ? 'נשארו היום' : 'מעל היעד'}</Text>
+            <Text style={[font.display, { color: left >= 0 ? colors.text : colors.danger }]}>
+              {Math.abs(Math.round(left))}
+              <Text style={[font.small, { fontWeight: '600' }]}> קק״ל</Text>
             </Text>
-          </Row>
+          </View>
           <MacroBar label="קלוריות" value={kcal} max={profile.target_kcal} color={colors.calories} unit="קק״ל" />
           <MacroBar label="חלבון" value={totals?.protein ?? 0} max={profile.target_protein} color={colors.protein} />
-          <Text style={[font.small, { marginTop: 4 }]}>{totals.protein >= profile.target_protein ? 'יעד החלבון הושג' : `עוד ${Math.ceil(profile.target_protein - totals.protein)} גרם חלבון ליעד`}</Text>
           </>}
           <Row style={{ gap: spacing.sm, marginTop: spacing.md }}>
             <QuickBtn icon="add" label="הוספת אוכל" onPress={() => router.push({ pathname: '/food/search', params })} />

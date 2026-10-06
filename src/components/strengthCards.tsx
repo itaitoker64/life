@@ -76,7 +76,11 @@ export function StrengthHero() {
       </Hero>
     );
   }
-  const r = nextRoutine();
+  // The planned calendar wins over plain rotation, so Train and Today agree on the next session.
+  const plans = plannedSessions(data, R.plans, today(), addDays(today(), 7));
+  const matches = matchSessions(plans, completedSessions(L.workouts, R.activities, data));
+  const next = plans.find(p => p.kind === 'strength' && p.status !== 'skipped' && !matches.has(p.id) && L.routines.some(x => x.id === p.routineId));
+  const r = next ? L.routines.find(x => x.id === next.routineId) : nextRoutine();
   if (!r) {
     return (
       <Hero kicker="מתחילים" title="בונים רוטינה ראשונה" sub="או מתחילים אימון ריק ומוסיפים תרגילים תוך כדי.">
@@ -87,12 +91,7 @@ export function StrengthHero() {
   const last = lastDone(r.id);
   const mins = avgMinutes(r.id);
   const meta = [`${r.items.length} תרגילים`];
-  if (data.combinedProgram?.enabled) {
-    const plans = plannedSessions(data, R.plans, today(), addDays(today(), 7));
-    const matches = matchSessions(plans, completedSessions(L.workouts, R.activities, data));
-    const next = plans.find(p => p.kind === 'strength' && p.routineId === r.id && p.status !== 'skipped' && !matches.has(p.id));
-    if (next) meta.unshift(formatLongDate(next.date));
-  }
+  if (next) meta.unshift(next.date === today() ? 'היום' : formatLongDate(next.date));
   if (mins) meta.push(`~${mins} דק׳`);
   if (last) meta.push(`לאחרונה ${relDay(last.startedAt)}`);
   const plan = planLine(r);

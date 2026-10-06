@@ -460,6 +460,8 @@ export function checkPR(a: ActiveWorkout, exId: string, st: LiveSet): string | n
   if (!w || !r) return null;
   if (a.equipmentAdjusted || a.trainingKind === 'crossfit') return null;
   const b = exerciseBests(exId, a.id);
+  // The first session of an exercise sets the baseline; it is not a record.
+  if (!b.e1rm && !b.weight) return null;
   let e1Best = b.e1rm, wBest = b.weight;
   for (const it of a.items) {
     if (it.exerciseId !== exId) continue;
@@ -587,8 +589,8 @@ export function saveWorkout(a: ActiveWorkout): Workout {
       vol += s.weight * s.reps;
     }
     const hits: string[] = [];
-    if (top1 > b.e1rm + 0.01) hits.push(`1RM ${fmtNum(fmtW(top1))} ${unitLabel()}`);
-    if (topW > b.weight + 0.01) hits.push(`משקל ${fmtNum(fmtW(topW))} ${unitLabel()}`);
+    if (top1 > b.e1rm + 0.01 && b.e1rm > 0) hits.push(`1RM ${fmtNum(fmtW(top1))} ${unitLabel()}`);
+    if (topW > b.weight + 0.01 && b.weight > 0) hits.push(`משקל ${fmtNum(fmtW(topW))} ${unitLabel()}`);
     if (vol > b.volume + 0.01 && b.volume > 0) hits.push('נפח');
     if (hits.length) prs.push({ exerciseId: it.exerciseId, hits });
   }
