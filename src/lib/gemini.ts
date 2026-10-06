@@ -69,6 +69,8 @@ export async function generateJson<T extends z.ZodType>(opts: {
   const apiKey = opts.apiKey ?? (await getApiKey());
   if (!apiKey) throw new MissingApiKeyError();
   const responseJsonSchema = toGeminiSchema(opts.schema);
+  // If the API rejects the schema field, fall back to plain JSON mode with the schema in the prompt.
+  let useSchema = true;
   let lastErr: unknown = null;
 
   for (const model of GEMINI_MODELS) {
@@ -79,11 +81,16 @@ export async function generateJson<T extends z.ZodType>(opts: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
           body: JSON.stringify({
-            systemInstruction: { parts: [{ text: opts.system }] },
+            systemInstruction: {
+              parts: [{ text: useSchema ? opts.system : `${opts.system}
+
+Reply with JSON matching this JSON Schema:
+${JSON.stringify(responseJsonSchema)}` }],
+            },
             contents: [{ role: 'user', parts: opts.parts }],
             generationConfig: {
               responseMimeType: 'application/json',
-              responseJsonSchema,
+              ...(useSchema ? { responseJsonSchema } : {}),
               temperature: opts.temperature ?? 0.2,
             },
           }),
@@ -98,6 +105,11 @@ export async function generateJson<T extends z.ZodType>(opts: {
         lastErr = new GeminiError(msg, res.status);
         if (isTransient(res.status)) {
           await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+          continue;
+        }
+        if (res.status === 400 && useSchema && /schema/i.test(msg)) {
+          useSchema = false;
+          attempt--;
           continue;
         }
         // Unknown model → try the next one; anything else (bad key, bad request) is final.
