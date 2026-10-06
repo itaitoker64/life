@@ -4,6 +4,7 @@ import { BottomTabBar } from 'expo-router/build/react-navigation/bottom-tabs';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Menu } from '../../src/components/sheet';
 import { useApp } from '../../src/state/store';
 import { L, useLiftVersion } from '../../src/strength/store';
@@ -15,6 +16,7 @@ export default function TabsLayout() {
   const router = useRouter();
   const { selectedDate } = useApp();
   const [menu, setMenu] = useState(false);
+  const insets = useSafeAreaInsets();
   useLiftVersion();
 
   const params = { date: selectedDate, meal: 'snack' };
@@ -46,7 +48,8 @@ export default function TabsLayout() {
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.faint,
           tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
-          tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.border, height: 64, paddingTop: 6 },
+          // Room for Android's system navigation buttons (the app draws edge-to-edge).
+          tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.border, height: 64 + insets.bottom, paddingTop: 6, paddingBottom: insets.bottom },
           sceneStyle: { backgroundColor: colors.bg },
         }}
       >

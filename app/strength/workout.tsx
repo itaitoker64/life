@@ -5,7 +5,7 @@ import { useKeepAwake } from 'expo-keep-awake';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, TextInput, Vibration, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Menu, Sheet, toast } from '../../src/components/sheet';
 import { DurationSheet, ExercisePicker, ExerciseThumb, NumCell, RepRangeSheet, SetBadge } from '../../src/components/strength';
 import { Button, Row } from '../../src/components/ui';
@@ -71,6 +71,7 @@ export default function WorkoutScreen() {
   useLiftVersion();
   useKeepAwake();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const a = L.active;
   const scrollRef = useRef<ScrollView>(null);
   const cardY = useRef<Record<number, number>>({});
@@ -158,7 +159,7 @@ export default function WorkoutScreen() {
   const routineName = a.routineId ? routine(a.routineId)?.name : null;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'left', 'right', 'bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'left', 'right']}>
       {/* header */}
       <Row style={{ paddingHorizontal: spacing.sm, paddingVertical: 6, gap: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <Pressable onPress={() => router.back()} hitSlop={8} style={{ padding: 8 }} accessibilityLabel="מזעור">
@@ -180,7 +181,7 @@ export default function WorkoutScreen() {
         <Button title="סיום" variant="good" size="sm" onPress={finish} />
       </Row>
 
-      <ScrollView ref={scrollRef} contentContainerStyle={{ padding: spacing.md, paddingBottom: a.rest ? 140 : 60 }} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scrollRef} contentContainerStyle={{ padding: spacing.md, paddingBottom: (a.rest ? 140 : 60) + insets.bottom }} keyboardShouldPersistTaps="handled">
         {deloadActive() ? (
           <View style={{ padding: 10, borderRadius: radius.md, backgroundColor: colors.primarySoft, marginBottom: spacing.md }}>
             <Text style={[font.small, { color: colors.text }]}>שבוע דילואוד: אותם משקלים, חצי מהסטים, לעצור כשנשארות 3–4 חזרות.</Text>
@@ -225,7 +226,7 @@ export default function WorkoutScreen() {
 
       {/* rest dock */}
       {a.rest ? (
-        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border, paddingBottom: 18 }}>
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border, paddingBottom: 18 + insets.bottom }}>
           <View style={{ height: 3, backgroundColor: colors.elev2 }}>
             <View style={{ height: 3, width: `${Math.min(100, (restLeft / a.rest.duration) * 100)}%`, backgroundColor: colors.primary }} />
           </View>
