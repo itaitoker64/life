@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { getApiKey } from './secrets';
 
 // Same models Stride used: newest flash first, then the rolling alias.
-export const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-flash-latest'];
+// Newest flash first, then rolling aliases; flash-lite has the most generous free quota.
+export const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-flash-lite-latest'];
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 // Google Cloud "express mode" keys (AQ.…) only work against Vertex AI, which serves the same models.
 const VERTEX_ENDPOINT = 'https://aiplatform.googleapis.com/v1/publishers/google/models';
@@ -56,7 +57,7 @@ function toGeminiSchema(schema: z.ZodType): unknown {
 }
 
 function isTransient(status: number) {
-  return status === 429 || status === 500 || status === 503;
+  return status === 500 || status === 503;
 }
 
 /**
@@ -116,6 +117,8 @@ ${JSON.stringify(responseJsonSchema)}` }],
       if (!res.ok) {
         const msg: string = body?.error?.message ?? `HTTP ${res.status}`;
         lastErr = new GeminiError(msg, res.status);
+        // Quota used up on this model: retrying only burns more quota — move to the next model.
+        if (res.status === 429) break;
         if (isTransient(res.status)) {
           await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
           continue;
