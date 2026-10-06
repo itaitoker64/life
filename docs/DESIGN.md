@@ -31,3 +31,14 @@ Charcoal surfaces, restrained periwinkle primary, teal running and orange CrossF
 ## Concurrency and release
 
 Implemented in a separate git worktree based on abc5806 (including Claude's AI key/network fixes and Health Connect changes). Re-fetch and integrate latest main before publishing; never force push. This change introduces no native dependency or app config modification. Existing fingerprint runtime from main still determines which installed APK receives an OTA.
+
+## Verification
+
+- TypeScript check and all 48 planning tests passed.
+- Android production bundle exported successfully (no native build changes).
+- Chromium preview at 390×844 and 320×740: RTL four-tab navigation, empty/rest home, scheduled CrossFit home, gym adaptation source, nutrition diary, progress filters and weekly chart layout.
+- Created a test profile and activated a hybrid plan through UI; home immediately reflected the day's CrossFit session.
+- Started that CrossFit session, minimized it and returned home: primary action became Resume and the persistent active-workout bar remained available.
+- Logged 100g banana to yesterday's breakfast through UI: date/meal parameters and stored diary entry matched. Empty days remain distinct from recorded intake.
+- Browser reported no uncaught errors. Camera hardware, Health Connect and OTA receipt were not tested on a physical Android phone in this environment.
+- Integrated Claude's subsequent e080498 Gemini support commit without conflicts. His AI/key/settings changes are preserved.
