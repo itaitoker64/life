@@ -21,7 +21,7 @@ export function WeeklyReview({ days, totals, loading, error }: { days: string[];
   const router = useRouter();
   if (!profile) return null;
   const plans = plannedSessions(data, R.plans, days[0], days[6]);
-  const summary = summarizePeriod(plans, completedSessions(L.workouts, R.activities), [...totals.values()], days[0], days[6], today(), { kcal: profile.target_kcal, protein: profile.target_protein });
+  const summary = summarizePeriod(plans, completedSessions(L.workouts, R.activities, data), [...totals.values()], days[0], days[6], today(), { kcal: profile.target_kcal, protein: profile.target_protein });
   return <>
     <SectionTitle>סיכום שבועי משולב</SectionTitle>
     <Card>
@@ -57,7 +57,7 @@ export function MonthlyTrends({ totals, loading, error }: { totals: DailyTotal[]
   const profile = useApp(s => s.profile);
   const { width } = useWindowDimensions();
   if (!profile) return null;
-  const actual = completedSessions(L.workouts, R.activities);
+  const actual = completedSessions(L.workouts, R.activities, data);
   const from = monthStart();
   const to = monthEnd();
   const plans = plannedSessions(data, R.plans, from, to);

@@ -40,7 +40,7 @@ async function reconcile() {
   }
   await ensureChannel();
   const plans = plannedSessions(data, R.plans, today(), addDays(today(), 27));
-  const workouts = workoutReminders(reminders, plans, completedSessions(L.workouts, R.activities), new Date());
+  const workouts = workoutReminders(reminders, plans, completedSessions(L.workouts, R.activities, data), new Date());
   const desired: Notifications.NotificationRequestInput[] = workouts.map(w => ({
     identifier: w.id,
     content: { title: 'האימון הבא שלך', body: w.body, sound: true, data: { screen: 'journal', date: w.date } },

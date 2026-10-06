@@ -1,3 +1,4 @@
+import { usePlanning } from '../../../src/planning/store';
 // One planned run in full: structure, paces, zone and why (Stride's DayDetail + StructureCard).
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
@@ -11,6 +12,7 @@ import { colors, font, spacing } from '../../../src/theme';
 export default function RunDay() {
   useRunVersion();
   const { date } = useLocalSearchParams<{ date: string }>();
+  usePlanning(s => s.data);
   const plan = planFor(date);
   const runs = R.activities.filter((a) => toISODate(new Date(a.start_time)) === date);
   const d = new Date(`${date}T12:00:00`);

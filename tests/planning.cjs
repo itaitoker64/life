@@ -132,3 +132,79 @@ test('a completed coach plan matches its run before a duplicate generic plan', (
   const summary = summarizePeriod(plans, [actual({ kind: 'run', routineId: undefined, km: 4 })], [], '2026-10-04', '2026-10-10', '2026-10-06', { kcal: 2000, protein: 140 });
   assert.equal(summary.completed, 1); assert.equal(summary.matched, 1);
 });
+
+const { adaptSessions, setAdaptationProvider } = load('src/planning/adaptation.ts');
+const context = (extra = {}) => ({ today: '2026-10-06', loads: [{ id: 'wod', date: '2026-10-06', title: 'WOD', minutes: 45, effort: 8, areas: ['legs'] }], routineAreas: { legs: ['legs'], upper: ['upper'] }, protectedDates: [], ...extra });
+const next = (extra = {}) => session({ id: 'next', date: '2026-10-07', routineId: 'legs', ...extra });
+test('hard leg WOD delays overlapping work but preserves upper-body split', () => {
+  const result = adaptSessions([next(), next({ id: 'upper', routineId: 'upper' })], context(), []);
+  assert.equal(result[0].date, '2026-10-08'); assert.equal(result[1].date, '2026-10-07');
+  assert.match(result[0].adjustment.reason, /WOD/);
+});
+test('light alternate work does not cause compensatory training or schedule changes', () => {
+  const plans = [next()]; assert.deepEqual(adaptSessions(plans, context({ loads: [{ ...context().loads[0], effort: 3 }] }), []), plans);
+});
+test('occupied days are not overloaded and unresolved conflicts stay visible', () => {
+  const plans = [next(), next({ id: 'other', date: '2026-10-08' }), next({ id: 'another', date: '2026-10-09' })];
+  const result = adaptSessions(plans, context(), []);
+  assert.equal(result[0].date, '2026-10-07'); assert.match(result[0].adjustment.reason, /אין יום פנוי/);
+  assert.equal(result[0].adjustment.mode, 'reduce');
+  assert.equal(result[0].adjustment.factor, 0.7);
+});
+test('manual moves, completed work, history and race-adjacent dates are protected', () => {
+  for (const extra of [{ manual: true }, { status: 'completed' }, { date: '2026-10-05' }]) {
+    const plan = next(extra); assert.deepEqual(adaptSessions([plan], context(), []), [plan]);
+  }
+  const plan = next(); assert.deepEqual(adaptSessions([plan], context({ protectedDates: ['2026-10-08'] }), []), [plan]);
+});
+test('undo survives recomputation and a changed load creates a new decision', () => {
+  const plan = next(), adjusted = adaptSessions([plan], context(), [])[0];
+  assert.deepEqual(adaptSessions([plan], context(), [adjusted.adjustment.key]), [plan]);
+  const changed = context({ loads: [{ ...context().loads[0], effort: 9 }] });
+  assert.ok(adaptSessions([plan], changed, [adjusted.adjustment.key])[0].adjustment);
+});
+test('actual matching workout is never shifted into the future', () => {
+  const plan = next(); const c = context({ loads: [{ ...context().loads[0], date: plan.date, kind: 'strength', routineId: 'legs' }] });
+  assert.deepEqual(adaptSessions([plan], c, []), [plan]);
+});
+test('adaptation is stable across date-range queries and does not compound moves', () => {
+  setAdaptationProvider(() => context());
+  try {
+    const data = emptyPlanning(); data.sessions = [next()];
+    assert.equal(plannedSessions(data, [], '2026-10-08', '2026-10-08')[0].date, '2026-10-08');
+    assert.equal(plannedSessions(data, [], '2026-10-06', '2026-10-12')[0].date, '2026-10-08');
+    assert.equal(data.sessions[0].date, '2026-10-07');
+    data.adaptationEnabled = false;
+    assert.equal(plannedSessions(data, [], '2026-10-06', '2026-10-12')[0].date, '2026-10-07');
+  } finally { setAdaptationProvider(() => undefined); }
+});
+test('a replacement is recorded once and does not leave the original workout due', () => {
+  const data = emptyPlanning(); data.sessions = [next({ date: '2026-10-06' })];
+  data.alternateWorkouts = [{ ...context().loads[0], replacementId: 'next' }];
+  const replaced = plannedSessions(data, [], '2026-10-06', '2026-10-06');
+  assert.equal(replaced[0].status, 'completed');
+  assert.equal(matchSessions(replaced, completedSessions([], [], data)).get('next'), 'wod');
+  assert.equal(completedSessions([], [], data).length, 1);
+  data.alternateWorkouts[0].id = 'lift:actual';
+  const actualWorkout = { id: 'actual', startedAt: new Date('2026-10-06T12:00:00Z').getTime(), name: 'WOD', routineId: null };
+  assert.equal(completedSessions([actualWorkout], [], data).length, 1);
+});
+test('persisted moves survive midnight, and explicit undo restores the baseline', () => {
+  const data = emptyPlanning(); data.sessions = [next()];
+  const moved = adaptSessions(data.sessions, context(), [])[0];
+  data.automaticAdjustments = [{ id: moved.id, date: moved.date, adjustment: moved.adjustment }];
+  setAdaptationProvider(() => context({ today: '2026-10-08', loads: [] }));
+  try {
+    assert.equal(plannedSessions(data, [], '2026-10-06', '2026-10-12')[0].date, '2026-10-08');
+    data.dismissedAdjustments = [moved.adjustment.key];
+    assert.equal(plannedSessions(data, [], '2026-10-06', '2026-10-12')[0].date, '2026-10-07');
+  } finally { setAdaptationProvider(() => undefined); }
+});
+test('reduced strength session keeps warm-ups and does not change the saved routine', () => {
+  const { reducedStrengthItems } = load('src/planning/adaptation.ts');
+  const item = { exerciseId: 'squat', notes: '', restSec: 90, repMin: 5, repMax: 8, sets: [{ type: 'warmup', weight: 30, reps: 5, done: false }, ...Array.from({ length: 3 }, () => ({ type: 'fail', weight: 100, reps: 6, done: false }))] };
+  const reduced = reducedStrengthItems([item], 0.7)[0];
+  assert.equal(reduced.sets.length, 3); assert.equal(reduced.sets[0].weight, 30);
+  assert.equal(reduced.sets[1].weight, 90); assert.equal(reduced.sets[1].type, 'normal');
+  assert.equal(item.sets.length, 4); assert.equal(item.sets[1].weight, 100);
+});

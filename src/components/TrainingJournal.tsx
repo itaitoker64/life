@@ -9,6 +9,7 @@ import { updatePlanning, usePlanning } from '../planning/store';
 import { R, useRunVersion } from '../run/store';
 import { L, useLiftVersion } from '../strength/store';
 import { colors, font, spacing } from '../theme';
+import { AlternateWorkout } from './AlternateWorkout';
 import { PlanningEditor, MoveSession } from './PlanningEditor';
 import { Button, Card, Row, SectionTitle, Segmented, Title } from './ui';
 
@@ -22,22 +23,29 @@ export function TrainingJournal() {
   useEffect(() => { if (params.date && validDate(params.date)) setSelected(params.date); }, [params.date]);
   const [kind, setKind] = useState<'all' | 'strength' | 'run'>('all');
   const [period, setPeriod] = useState<'day' | 'past' | 'next'>('day');
+  const [logging, setLogging] = useState(false);
   const [scheduling, setScheduling] = useState(false);
   const [moving, setMoving] = useState<Session | null>(null);
   const days = weekDays(selected);
   const now = today();
   const from = period === 'past' ? addDays(now, -90) : period === 'next' ? now : days[0];
   const to = period === 'next' ? addDays(now, 27) : period === 'past' ? now : days[6];
-  const actual = completedSessions(L.workouts, R.activities);
+  const actual = completedSessions(L.workouts, R.activities, data);
   const plans = plannedSessions(data, R.plans, from < days[0] ? from : days[0], to > days[6] ? to : days[6]);
   const matches = matchSessions(plans, actual);
-  const entries: Entry[] = actual.map(a => ({ ...a, done: true, status: a.kind === 'run' ? `בוצע · ${a.km.toFixed(1)} ק״מ` : 'בוצע', open: () => a.workoutId ? router.push({ pathname: '/strength/history/[id]', params: { id: a.workoutId } }) : router.push('/run/history') }));
+  const entries: Entry[] = actual.map(a => ({ ...a, done: true, status: a.kind === 'run' ? `בוצע · ${a.km.toFixed(1)} ק״מ` : 'בוצע', open: () => {
+    if (a.workoutId) router.push({ pathname: '/strength/history/[id]', params: { id: a.workoutId } });
+    else if (a.id.startsWith('alternate:')) {
+      const load = data.alternateWorkouts?.find(w => w.id === a.id);
+      if (load) Alert.alert(load.title, `${load.minutes} דקות · עצימות ${load.effort}/10`);
+    } else router.push('/run/history');
+  } }));
   for (const plan of plans) {
     const match = matches.get(plan.id);
     if (match && !match.startsWith('marked:')) continue;
     const done = !!match;
-    entries.push({ ...plan, plan, done, status: done ? 'סומן כבוצע' : plan.status === 'skipped' ? 'דולג' : plan.date < now ? 'לא סומן כבוצע' : 'מתוכנן', open: () => {
-      if (plan.coachDate) router.push({ pathname: '/run/day/[date]', params: { date: plan.coachDate } });
+    entries.push({ ...plan, title: plan.adjustment?.mode === 'reduce' ? `${plan.kind === 'run' ? 'ריצה קלה' : plan.title} · עומס מופחת` : plan.title, plan, done, status: done ? 'סומן כבוצע' : plan.status === 'skipped' ? 'דולג' : plan.date < now ? 'לא סומן כבוצע' : 'מתוכנן', open: () => {
+      if (plan.coachDate) router.push({ pathname: '/run/day/[date]', params: { date: plan.adjustment ? plan.date : plan.coachDate } });
       else if (plan.routineId && L.routines.some(r => r.id === plan.routineId)) router.push({ pathname: '/strength/routine/[id]', params: { id: plan.routineId } });
       else router.push({ pathname: '/train', params: { tab: plan.kind === 'run' ? 'run' : 'strength' } });
     } });
@@ -52,8 +60,10 @@ export function TrainingJournal() {
     <Title sub="כוח וריצה · אימונים שבוצעו ותוכנית להמשך">יומן אימונים</Title>
     <Row style={{ gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
       <Button title="תכנון שבועי / שיבוץ" size="sm" disabled={!ready} onPress={() => setScheduling(true)} />
+      <Button title="ביצעתי אימון אחר / עדכון עומס" size="sm" onPress={() => setLogging(true)} />
       <Button title="תזכורות" size="sm" variant="secondary" onPress={() => router.push('/reminders')} />
     </Row>
+    <Card><Text style={font.h3}>התאמה חכמה</Text><Text style={font.small}>עומס כוח וריצה נבדק יחד. ההזזות ביומן משנות גם תזכורות. העצימות האוטומטית משוערת; אפשר לעדכן אותה לאחר האימון. אם אין יום פנוי, האימון הבא מתחיל בעומס מופחת. החלוקה המקורית נשמרת.</Text><Button title={data.adaptationEnabled === false ? 'הפעלת התאמה' : 'כיבוי התאמה'} size="sm" variant="ghost" onPress={() => updatePlanning(d => ({ ...d, adaptationEnabled: d.adaptationEnabled === false })).catch(() => Alert.alert('השמירה נכשלה'))} /></Card>
     <Segmented options={[{ value: 'all', label: 'הכול' }, { value: 'strength', label: 'כוח' }, { value: 'run', label: 'ריצה' }]} value={kind} onChange={setKind} />
     <Card>
       <Row style={{ justifyContent: 'space-between', marginBottom: 12 }}>
@@ -74,10 +84,13 @@ export function TrainingJournal() {
       <Pressable accessibilityRole="button" onPress={e.open}>
         <Row style={{ gap: 10 }}><Ionicons name={e.kind === 'run' ? 'walk-outline' : 'barbell-outline'} size={22} color={e.kind === 'run' ? colors.run : colors.primary} /><View style={{ flex: 1 }}><Text style={font.h3}>{e.title}</Text><Text style={font.small}>{formatLongDate(e.date)}</Text></View></Row>
         <Text style={[font.small, { color: e.done ? colors.success : colors.muted, marginTop: 8 }]}>{e.status}</Text>
-        {e.plan?.coachDate && e.plan.coachDate !== e.date ? <Text style={font.tiny}>הועבר מ־{formatLongDate(e.plan.coachDate)} · הפרטים נפתחים מתוכנית המקור</Text> : null}
+        {e.plan?.coachDate && e.plan.coachDate !== e.date ? <Text style={font.tiny}>הועבר מ־{formatLongDate(e.plan.coachDate)} · {e.plan.adjustment ? 'הפרטים המעודכנים נפתחים' : 'הפרטים נפתחים מתוכנית המקור'}</Text> : null}
       </Pressable>
+      {e.plan?.adjustment ? <View><Text style={font.small}>{e.plan.adjustment.reason}</Text>{e.plan.adjustment.originalDate !== e.date ? <Text style={font.tiny}>נדחה מ־{formatLongDate(e.plan.adjustment.originalDate)}</Text> : null}<Button title="ביטול ההתאמה הזו" size="sm" variant="ghost" onPress={() => updatePlanning(d => ({ ...d, dismissedAdjustments: [...(d.dismissedAdjustments ?? []), e.plan!.adjustment!.key] })).catch(() => Alert.alert('השמירה נכשלה'))} /></View> : null}
+      {e.done && (data.alternateWorkouts ?? []).some(w => w.id === e.id) ? <Button title="מחיקת דיווח העומס" size="sm" variant="ghost" onPress={() => updatePlanning(d => ({ ...d, alternateWorkouts: (d.alternateWorkouts ?? []).filter(w => w.id !== e.id) })).catch(() => Alert.alert('השמירה נכשלה'))} /> : null}
       {e.plan && !e.done && e.plan.status !== 'skipped' ? <Row style={{ gap: 12 }}><Button title="הזזת אימון" variant="ghost" size="sm" onPress={() => setMoving(e.plan!)} /><Button title="ביטול שיבוץ" variant="ghost" size="sm" onPress={() => cancel(e.plan!)} /></Row> : null}
     </Card>)}
+    {logging ? <AlternateWorkout date={selected > now ? now : selected} onClose={() => setLogging(false)} /> : null}
     {scheduling ? <PlanningEditor date={selected < now ? now : selected} onClose={() => setScheduling(false)} /> : null}
     {moving ? <MoveSession session={moving} onClose={() => setMoving(null)} /> : null}
   </ScrollView>;

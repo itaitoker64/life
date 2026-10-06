@@ -1,3 +1,4 @@
+import { syncAdaptations } from '../src/planning/runtime';
 import * as Notifications from 'expo-notifications';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -62,7 +63,7 @@ export default function RootLayout() {
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
       if (s === 'active') {
-        syncReminders().catch(e => console.warn('reminder sync failed', e));
+        syncAdaptations().then(syncReminders).catch(e => console.warn('training sync failed', e));
         syncIfStale().then(recalibrateIfStale).catch(e => console.warn('run sync failed', e));
       }
       if (s === 'background') autoBackup();
@@ -71,7 +72,7 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (planning.ready && liftReady && runReady) syncReminders().catch(e => console.warn('reminder sync failed', e));
+    if (planning.ready && liftReady && runReady) syncAdaptations().then(syncReminders).catch(e => console.warn('training sync failed', e));
   }, [planning.data, planning.ready, liftReady, runReady, liftVersion, runVersion]);
 
   useEffect(() => {

@@ -1,3 +1,4 @@
+import { adaptSessions, adaptationContext, type TrainingLoad, type Adjustment } from './adaptation';
 import type { DailyTotal } from '../db/log';
 import { addDays, parseISODate, toISODate } from '../lib/dates';
 import type { Activity, CoachingPlan } from '../run/types';
@@ -11,6 +12,8 @@ export interface Session {
   title: string;
   routineId?: string;
   coachDate?: string;
+  manual?: boolean;
+  adjustment?: Adjustment;
   status?: 'planned' | 'completed' | 'skipped';
 }
 export interface WeeklyRule {
@@ -39,9 +42,13 @@ export interface PlanningData {
   sessions: Session[];
   overrides: OccurrenceOverride[];
   reminders: ReminderSettings;
+  alternateWorkouts?: TrainingLoad[];
+  dismissedAdjustments?: string[];
+  adaptationEnabled?: boolean;
+  automaticAdjustments?: Array<{ id: string; date: string; adjustment: Adjustment }>;
 }
 export const emptyPlanning = (): PlanningData => ({
-  rules: [], sessions: [], overrides: [],
+  rules: [], sessions: [], overrides: [], alternateWorkouts: [], dismissedAdjustments: [], adaptationEnabled: true,
   reminders: { workoutEnabled: false, workoutTime: '18:00', mealsEnabled: false, mealTimes: ['08:00', '13:00', '20:00'] },
 });
 export const validDate = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date) && toISODate(parseISODate(date)) === date;
@@ -49,12 +56,22 @@ export const validTime = (time: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(time
 
 /** Occurrence IDs remain stable when an individual workout is moved. */
 export function plannedSessions(data: PlanningData, coachPlans: CoachingPlan[], from: string, to: string): Session[] {
+  const context = adaptationContext();
+  const requestedFrom = from, requestedTo = to;
+  if (context && data.adaptationEnabled !== false) {
+    if (from > context.today) from = context.today;
+    if (to < addDays(context.today, 8)) to = addDays(context.today, 8);
+  }
+  const replacements = new Set((data.alternateWorkouts ?? []).map(w => w.replacementId).filter(Boolean));
   const overrides = new Map(data.overrides.map(o => [o.id, o]));
   const apply = (s: Session): Session[] => {
     const override = overrides.get(s.id);
     if (override?.cancelled) return [];
-    const date = override?.date ?? s.date;
-    return date >= from && date <= to ? [{ ...s, date }] : [];
+    if (replacements.has(s.id)) s = { ...s, status: 'completed' };
+    const pastAdjustment = !override && context && data.adaptationEnabled !== false ? data.automaticAdjustments?.find(a => a.id === s.id && a.adjustment.originalDate < context.today && !(data.dismissedAdjustments ?? []).includes(a.adjustment.key)) : undefined;
+    const date = override?.date ?? pastAdjustment?.date ?? s.date;
+    if (pastAdjustment) s = { ...s, adjustment: pastAdjustment.adjustment };
+    return date >= from && date <= to ? [{ ...s, date, manual: !!override }] : [];
   };
   const coach = coachPlans.filter(p => p.workout_type !== 'rest').map(p => ({
     id: `coach:${p.id}`, date: p.plan_date, coachDate: p.plan_date,
@@ -67,13 +84,15 @@ export function plannedSessions(data: PlanningData, coachPlans: CoachingPlan[], 
     const dates = new Set<string>();
     for (let d = from; d <= to; d = addDays(d, 1)) dates.add(d);
     for (const o of data.overrides) if (o.id === `weekly:${rule.id}:${o.originalDate}`) dates.add(o.originalDate);
+    for (const a of data.automaticAdjustments ?? []) if (a.id === `weekly:${rule.id}:${a.adjustment.originalDate}`) dates.add(a.adjustment.originalDate);
     for (const date of dates) {
       if (date < rule.startDate || (rule.endDate && date > rule.endDate) || parseISODate(date).getDay() !== rule.weekday) continue;
       if (rule.kind === 'run' && coachDates.has(date)) continue;
       result.push(...apply({ id: `weekly:${rule.id}:${date}`, date, kind: rule.kind, title: rule.title, routineId: rule.routineId }));
     }
   }
-  return result.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+  const adapted = context && data.adaptationEnabled !== false ? adaptSessions(result, { ...context, loads: [...context.loads, ...(data.alternateWorkouts ?? []).filter(w => !context.loads.some(l => l.id === w.id))] }, data.dismissedAdjustments ?? []) : result;
+  return adapted.filter(s => s.date >= requestedFrom && s.date <= requestedTo).sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
 }
 
 export interface CompletedSession {
@@ -83,12 +102,14 @@ export interface CompletedSession {
   title: string;
   routineId?: string;
   workoutId?: string;
+  replacementId?: string;
   km: number;
 }
-export function completedSessions(workouts: Workout[], activities: Activity[]): CompletedSession[] {
+export function completedSessions(workouts: Workout[], activities: Activity[], data?: PlanningData): CompletedSession[] {
   return [
-    ...workouts.map(w => ({ id: `lift:${w.id}`, workoutId: w.id, date: toISODate(new Date(w.startedAt)), kind: 'strength' as const, title: w.name, routineId: w.routineId ?? undefined, km: 0 })),
-    ...activities.map(a => ({ id: `activity:${a.id}`, date: toISODate(new Date(a.start_time)), kind: 'run' as const, title: a.name ?? 'ריצה', km: a.distance_m / 1000 })),
+    ...(data?.alternateWorkouts ?? []).filter(w => !workouts.some(a => `lift:${a.id}` === w.id) && !activities.some(a => `activity:${a.id}` === w.id)).map(w => ({ id: w.id, date: w.date, kind: 'strength' as const, title: w.title, replacementId: w.replacementId, km: 0 })),
+    ...workouts.map(w => ({ id: `lift:${w.id}`, workoutId: w.id, date: toISODate(new Date(w.startedAt)), kind: 'strength' as const, title: w.name, replacementId: data?.alternateWorkouts?.find(a => a.id === `lift:${w.id}`)?.replacementId, routineId: w.routineId ?? undefined, km: 0 })),
+    ...activities.map(a => ({ id: `activity:${a.id}`, date: toISODate(new Date(a.start_time)), kind: 'run' as const, title: a.name ?? 'ריצה', replacementId: data?.alternateWorkouts?.find(w => w.id === `activity:${a.id}`)?.replacementId, km: a.distance_m / 1000 })),
   ];
 }
 
@@ -102,7 +123,7 @@ export function matchSessions(plans: Session[], actual: CompletedSession[]) {
     || Number(!!b.coachDate) - Number(!!a.coachDate));
   for (const plan of ordered) {
     if (plan.status === 'skipped') continue;
-    const found = actual.find(a => !used.has(a.id) && a.kind === plan.kind && a.date === plan.date && (!plan.routineId || plan.routineId === a.routineId));
+    const found = actual.find(a => !used.has(a.id) && a.date === plan.date && (a.replacementId === plan.id || !a.replacementId && a.kind === plan.kind && (!plan.routineId || plan.routineId === a.routineId)));
     if (found) { matches.set(plan.id, found.id); used.add(found.id); }
     else if (plan.status === 'completed') matches.set(plan.id, `marked:${plan.id}`);
   }

@@ -1,3 +1,6 @@
+import { plannedSessions } from '../planning/model';
+import { usePlanning } from '../planning/store';
+import { addDays } from '../lib/dates';
 // Running state: what Stride kept in Supabase now lives on the phone (docs table), and the work
 // Stride's edge functions did — pulling runs from intervals.icu and recalibrating the plan —
 // runs here.
@@ -87,11 +90,30 @@ export function activitiesSince(days: number): Activity[] {
 }
 
 export function plansBetween(from: string, to: string): CoachingPlan[] {
-  return R.plans.filter((p) => p.plan_date >= from && p.plan_date <= to);
+  const result: CoachingPlan[] = [];
+  for (let date = from; date <= to; date = addDays(date, 1)) { const p = planFor(date); if (p) result.push(p); }
+  return result;
 }
 
 export function planFor(date: string): CoachingPlan | null {
-  return R.plans.find((p) => p.plan_date === date) ?? null;
+  const original = R.plans.find(p => p.plan_date === date);
+  const sessions = plannedSessions(usePlanning.getState().data, R.plans, date, date);
+  const session = sessions.find(s => !!s.coachDate);
+  if (session) {
+    const source = R.plans.find(p => p.plan_date === session.coachDate);
+    if (source && session.adjustment?.mode === 'reduce') {
+      const factor = session.adjustment.factor ?? 0.7;
+      const easy = latestAssessment()?.training_paces?.easy;
+      return { ...source, plan_date: date, workout_type: 'easy', title: 'ריצה קלה · עומס מופחת',
+        duration_min: source.duration_min === null ? null : Math.max(1, Math.round(source.duration_min * factor)),
+        distance_km: source.distance_km === null ? null : Math.round(source.distance_km * factor * 10) / 10,
+        target_pace_fast_sec_km: easy?.fast ?? null, target_pace_slow_sec_km: easy?.slow ?? null, hr_zone: 2,
+        description: 'ריצה בקצב שמאפשר שיחה, ללא אינטרוולים או האצות.', adaptation_note: session.adjustment.reason };
+    }
+    if (source) return { ...source, plan_date: date, status: session.status ?? source.status, adaptation_note: session.adjustment?.reason ?? source.adaptation_note };
+  }
+  if (original && original.workout_type !== 'rest' && original.status === 'planned') return { ...original, workout_type: 'rest', title: 'יום ללא ריצה מתוכננת', duration_min: 0, distance_km: 0, description: 'השיבוץ עודכן ביומן האימונים.', adaptation_note: 'ראו את התוכנית המעודכנת ביומן.' };
+  return original ?? null;
 }
 
 export function latestAssessment(): CoachAssessment | null {

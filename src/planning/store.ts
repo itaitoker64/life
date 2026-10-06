@@ -21,7 +21,9 @@ export async function initPlanning() {
 /** Persist before notifying subscribers; serialize edits so concurrent saves cannot lose data. */
 export function updatePlanning(change: (data: PlanningData) => PlanningData): Promise<void> {
   const operation = writes.catch(() => {}).then(async () => {
-    const data = change(usePlanning.getState().data);
+    const previous = usePlanning.getState().data;
+    const data = change(previous);
+    if (data === previous) return;
     await saveDoc('life_planning', 'settings', data);
     usePlanning.setState({ data });
   });

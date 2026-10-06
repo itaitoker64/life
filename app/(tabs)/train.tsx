@@ -1,3 +1,4 @@
+import { usePlanning } from '../../src/planning/store';
 import { Ionicons } from '@expo/vector-icons';
 import { TrainingJournal } from '../../src/components/TrainingJournal';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -136,6 +137,7 @@ function Running() {
     return addDays(sunday, weekOffset * 7);
   }, [weekOffset]);
   const days = Array.from({ length: 21 }, (_, i) => addDays(start, i));
+  usePlanning(s => s.data);
   const today = planFor(todayISO);
   const sel = planFor(selected);
   const assessment = latestAssessment();

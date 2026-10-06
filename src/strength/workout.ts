@@ -1,3 +1,8 @@
+import { reducedStrengthItems } from '../planning/adaptation';
+import { plannedSessions } from '../planning/model';
+import { usePlanning } from '../planning/store';
+import { R } from '../run/store';
+import { today } from '../lib/dates';
 // Live workout logic, ported from lift/js/views/workout.js and views/home.js (everything that
 // isn't rendering). Screens call these and then emit() to re-render.
 import * as Notifications from 'expo-notifications';
@@ -220,6 +225,14 @@ export function startFromRoutine(routineId: string) {
   if (!r) return;
   const a = newActive(r.name, routineId);
   a.items = r.items.map(itemFromRoutine);
+  const planned = plannedSessions(usePlanning.getState().data, R.plans, today(), today()).find(s => s.routineId === routineId && s.status !== 'completed');
+  if (planned?.adjustment?.mode === 'reduce') {
+    const factor = planned.adjustment.factor ?? 0.7;
+    a.name = `${r.name} · עומס מופחת`;
+    a.failChecksAssigned = true;
+    a.items = reducedStrengthItems(a.items, factor);
+    a.items.forEach(autoWarmups);
+  }
   setActive(a);
 }
 
