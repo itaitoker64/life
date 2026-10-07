@@ -24,3 +24,6 @@ If the Action fails, read its log, fix, push again.
 `runtimeVersion` uses the **fingerprint** policy: an update only reaches APKs whose native
 code matches. If a change adds/changes native modules, the Action still publishes, but the
 phone will not receive it until a new APK is built and installed.
+The fingerprint also covers `package.json` **scripts** and `app.json`: even adding an npm script
+changes the runtime version, so the installed APK silently ignores the update. Run new test
+files with `node tests/<name>.cjs` instead of adding a script.
