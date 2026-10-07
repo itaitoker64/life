@@ -134,6 +134,21 @@ export default function Progress() {
           </InsightCard>
         </Row>
 
+        <Pressable onPress={() => router.push('/body')} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
+          <Card>
+            <Row style={{ justifyContent: 'space-between' }}>
+              <Row style={{ gap: spacing.md, flex: 1 }}>
+                <Ionicons name="body-outline" size={22} color={colors.weight} />
+                <View style={{ flex: 1 }}>
+                  <Text style={font.h3}>הרכב גוף</Text>
+                  <Text style={font.tiny}>אחוז שומן ומסת שריר מתמונה מקדימה ומהצד, והשוואה לאורך זמן</Text>
+                </View>
+              </Row>
+              <Ionicons name={chevronForward} size={18} color={colors.faint} />
+            </Row>
+          </Card>
+        </Pressable>
+
         </> : null}
         {section === 'training' ? <>
         <MonthlyTrends totals={monthTotals} loading={loading} error={loadError} />

@@ -154,6 +154,7 @@ export default function RootLayout() {
         <Stack.Screen name="training/crossfit" options={{ title: 'קרוספיט' }} />
         <Stack.Screen name="reminders" options={{ title: 'תזכורות' }} />
         <Stack.Screen name="weight" options={{ title: 'מגמת משקל' }} />
+        <Stack.Screen name="body" options={{ title: 'הרכב גוף' }} />
         <Stack.Screen name="expenditure" options={{ title: 'הוצאה קלורית' }} />
         <Stack.Screen name="program-update" options={{ title: 'עדכון תוכנית' }} />
         <Stack.Screen name="food/search" options={{ title: 'הוספת מזון' }} />
