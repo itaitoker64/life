@@ -3,6 +3,7 @@
 // scans can be compared against them; they are sent to Gemini only during an analysis.
 import { Directory, File, Paths } from 'expo-file-system';
 import * as ImageManipulator from 'expo-image-manipulator';
+import { Platform } from 'react-native';
 import { z } from 'zod';
 import { deleteDoc, loadCollection, saveDoc } from '../db/docs';
 import { recordAiUsage } from '../db/usage';
@@ -20,6 +21,9 @@ export interface BodyPhoto {
 const COLLECTION = 'body_scans';
 // Enough to see muscle definition and fat distribution; keeps requests and stored files small.
 const EDGE = 1024;
+// The browser preview has no app file system; photos are kept inline there (development only).
+const WEB = Platform.OS === 'web';
+const isInline = (uri: string) => uri.startsWith('data:');
 
 function photoDir(): Directory {
   const dir = new Directory(Paths.document, 'body');
@@ -35,10 +39,11 @@ async function downscale(photo: BodyPhoto) {
   const ref = await ctx.renderAsync();
   const out = await ref.saveAsync({ format: ImageManipulator.SaveFormat.JPEG, compress: 0.8, base64: true });
   if (!out.base64) throw new Error('לא ניתן לקרוא את התמונה. נסו לצלם שוב.');
-  return { uri: out.uri, base64: out.base64 };
+  return { uri: WEB ? `data:image/jpeg;base64,${out.base64}` : out.uri, base64: out.base64 };
 }
 
 async function storedBase64(uri: string): Promise<string | null> {
+  if (isInline(uri)) return uri.slice(uri.indexOf(',') + 1);
   try {
     const f = new File(uri);
     return f.exists ? await f.base64() : null;
@@ -147,6 +152,10 @@ export async function analyzeBody(input: ScanInput): Promise<BodyScan> {
 }
 
 export async function saveScan(scan: BodyScan): Promise<BodyScan> {
+  if (WEB) {
+    await saveDoc(COLLECTION, scan.id, scan);
+    return scan;
+  }
   const dir = photoDir();
   const keep = async (uri: string, name: string) => {
     const dest = new File(dir, `${scan.id}-${name}.jpg`);
@@ -166,6 +175,7 @@ export async function loadScans(): Promise<BodyScan[]> {
 export async function deleteScan(scan: BodyScan): Promise<void> {
   await deleteDoc(COLLECTION, scan.id);
   for (const uri of [scan.frontUri, scan.sideUri]) {
+    if (isInline(uri)) continue;
     try {
       const f = new File(uri);
       if (f.exists) f.delete();
@@ -175,6 +185,7 @@ export async function deleteScan(scan: BodyScan): Promise<void> {
 
 /** A restored backup carries the numbers but not the photos; the screen shows a placeholder then. */
 export function photoExists(uri: string): boolean {
+  if (isInline(uri)) return true;
   try {
     return new File(uri).exists;
   } catch {
